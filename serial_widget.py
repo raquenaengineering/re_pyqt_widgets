@@ -111,29 +111,30 @@ class serial_widget(QWidget):
         self.serial_timer.start(SERIAL_TIMER_PERIOD_MS)  # period needs to be relatively short
         self.serial_timer.stop()  # by default the timer will be off, enabled by connect.
 
-        self.layoutH1 = QHBoxLayout()
-        self.setLayout(self.layoutH1)
+        self.layout_serial = QHBoxLayout()
+        self.setLayout(self.layout_serial)
         # connect button #
         self.button_serial_connect = QPushButton("Connect")
         self.button_serial_connect.clicked.connect(self.on_button_connect_click)
-        self.layoutH1.addWidget(self.button_serial_connect)
+        self.layout_serial.addWidget(self.button_serial_connect)
         # disconnect button #
         self.button_serial_disconnect = QPushButton("Disconnect")
         self.button_serial_disconnect.clicked.connect(self.on_button_disconnect_click)
         self.button_serial_disconnect.setEnabled(False)
-        self.layoutH1.addWidget(self.button_serial_disconnect)
+        self.layout_serial.addWidget(self.button_serial_disconnect)
         # update button #
         self.button_serial_update = QPushButton("Update")
         self.button_serial_update.clicked.connect(self.on_button_update_click)
-        self.layoutH1.addWidget(self.button_serial_update)
+        self.layout_serial.addWidget(self.button_serial_update)
         # combo serial port #
         self.combo_serial_port = QComboBox()
-        self.layoutH1.addWidget(self.combo_serial_port)
+        self.layout_serial.addWidget(self.combo_serial_port)
         self.update_serial_ports()
         self.combo_serial_port.currentTextChanged.connect(				# changing something at this label, triggers on_port select, which should trigger a serial port characteristics update.
             self.on_port_select)
+        self.on_port_select(self.combo_serial_port.currentText())       # runs the method to ensure the port displayed at the textbox matches the port we're using
         self.label_port = QLabel("Port")
-        self.layoutH1.addWidget(self.label_port)
+        self.layout_serial.addWidget(self.label_port)
         # combo serial speed #
         self.combo_serial_speed = QComboBox()
         self.combo_serial_speed.setEditable(False)						# by default it isn't editable, but just in case.
@@ -141,24 +142,24 @@ class serial_widget(QWidget):
         self.combo_serial_speed.setCurrentIndex(11)						# this index corresponds to 250000 as default baudrate.
         self.combo_serial_speed.currentTextChanged.connect(				# on change on the serial speed textbox, we call the connected mthod
             self.change_serial_speed) 									# we'll figure out which is the serial speed at the method (would be possible to use a lambda?)
-        self.layoutH1.addWidget(self.combo_serial_speed)				#
+        self.layout_serial.addWidget(self.combo_serial_speed)				#
         self.label_baud = QLabel("baud")
-        self.layoutH1.addWidget(self.label_baud)
+        self.layout_serial.addWidget(self.label_baud)
         # text box command #
         self.textbox_send_command = QLineEdit()
         self.textbox_send_command.returnPressed.connect(self.send_serial)	# sends command via serial port
         self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
-        self.layoutH1.addWidget(self.textbox_send_command)
+        self.layout_serial.addWidget(self.textbox_send_command)
         # send button #
         self.b_send = QPushButton("Send")
         self.b_send.clicked.connect(self.send_serial)					# same action as enter in textbox
-        self.layoutH1.addWidget(self.b_send)
+        self.layout_serial.addWidget(self.b_send)
         # combo endline #
         self.combo_endline_params = QComboBox()
         self.combo_endline_params.addItems(ENDLINE_OPTIONS)
         self.combo_endline_params.setCurrentIndex(3)					# defaults to endline with CR & NL
         self.combo_endline_params.currentTextChanged.connect(self.change_endline_style)
-        self.layoutH1.addWidget(self.combo_endline_params)
+        self.layout_serial.addWidget(self.combo_endline_params)
 
     # methods #
 
@@ -234,12 +235,110 @@ class serial_widget(QWidget):
 
     # logging.debug(self.done)
 
+    def on_port_error(self, e):  # triggered by the serial thread, shows a window saying port is used by sb else.
+
+        desc = str(e)
+        logging.debug(type(e))
+        logging.debug(desc)
+        error_type = None
+        i = desc.find("Port is already open.")
+        if (i != -1):
+            print("PORT ALREADY OPEN BY THIS APPLICATION")
+            error_type = 1
+            logging.debug(i)
+        i = desc.find("FileNotFoundError")
+        if (i != -1):
+            logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
+            error_type = 2  #
+        i = desc.find("PermissionError")
+        if (i != -1):
+            logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
+            error_type = 3  # shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
+
+        i = desc.find("OSError")
+        if (i != -1):
+            logging.debug("BLUETOOTH DEVICE NOT REACHABLE ?")
+            error_type = 4
+
+        i = desc.find("ClearCommError")
+        if (i != -1):
+            logging.debug("DEVICE CABLE UNGRACEFULLY DISCONNECTED")
+            error_type = 5
+
+        # ~ i = desc.find("'utf-8' codec can't decode byte")			# NOT WORKING !!! (GIVING MORE ISSUES THAN IT SOLVED)
+        # ~ if(i != -1):
+        # ~ logging.debug("WRONG SERIAL BAUDRATE?")
+        # ~ error_type = 6
+
+        self.error_type = error_type
+
+        # ~ logging.debug("Error on serial port opening detected: ")
+        # ~ logging.debug(self.error_type)
+        self.handle_errors_flag = True  # more global variables to fuck things up even more.
+        self.handle_port_errors()
+
+    def handle_port_errors(self):  # made a trick, port_errors is a class variable (yup, dirty as fuck !!!)
+
+        if (self.error_type == 1):  # this means already open, should never happen.
+            logging.warning("ERROR TYPE 1")
+            d = QMessageBox.critical(
+                self,
+                "Serial port Blocked",
+                "The serial port selected is in use by other application",
+                buttons=QMessageBox.Ok
+            )
+        if (self.error_type == 2):  # this means device not connected
+            logging.warning("ERROR TYPE 2")
+            d = QMessageBox.critical(
+                self,
+                "Serial Device is not connected",
+                "Device not connected.\n Please check your cables/connections.  ",
+                buttons=QMessageBox.Ok
+            )
+        if (self.error_type == 3):  # this means locked by sb else.
+            d = QMessageBox.critical(
+                self,
+                "Serial port Blocked",
+                "The serial port selected is in use by other application.  ",
+                buttons=QMessageBox.Ok
+            )
+
+            self.on_button_disconnect_click()  # resetting to the default "waiting for connect" situation
+            self.handle_errors_flag = False
+        if (self.error_type == 4):  # this means device not connected
+            logging.warning("ERROR TYPE 4")
+            d = QMessageBox.critical(
+                self,
+                "Serial Device Unreachable",
+                "Serial device couldn't be reached,\n Bluetooth device too far? ",
+                buttons=QMessageBox.Ok
+            )
+        if (self.error_type == 5):  # this means device not connected
+            logging.warning("ERROR TYPE 5")
+            d = QMessageBox.critical(
+                self,
+                "Serial Cable disconnected while transmitting",
+                "Serial device was ungracefully disconnected, please check the cables",
+                buttons=QMessageBox.Ok
+            )
+        if (self.error_type == 6):  # this means device not connected
+            logging.warning("ERROR TYPE 6")
+            d = QMessageBox.critical(
+                self,
+                "Serial wrong decoding",
+                "There are problems decoding the data\n probably due to a wrong baudrate.",
+                buttons=QMessageBox.Ok
+            )
+        self.on_button_disconnect_click()  # resetting to the default "waiting for connect" situation
+        self.handle_errors_flag = False
+        self.error_type = None  # cleaning unhnandled errors flags.
 
     def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
         logging.debug("Connect Button Clicked")  # how to determine a connection was succesful ???
         self.button_serial_connect.setEnabled(False)
         self.button_serial_disconnect.setEnabled(True)
         self.combo_serial_port.setEnabled(False)
+        self.button_serial_update.setEnabled(False)
         self.combo_serial_speed.setEnabled(False)
         self.combo_endline_params.setEnabled(False)
         self.textbox_send_command.setEnabled(True)
@@ -252,25 +351,14 @@ class serial_widget(QWidget):
         print("Disconnect Button Clicked")
         self.button_serial_disconnect.setEnabled(False)  # toggle the enable of the connect/disconnect buttons
         self.button_serial_connect.setEnabled(True)
+        self.button_serial_update.setEnabled(True)
         self.combo_serial_port.setEnabled(True)
         self.combo_serial_speed.setEnabled(True)
         self.combo_endline_params.setEnabled(True)
         self.textbox_send_command.setEnabled(False)
-        self.status_bar.showMessage("Disconnected")  # showing sth is happening.
-        self.plot_frame.clear_plot()  # clear plot
-        self.clear_dataset()
-        self.plot_frame.dataset = self.dataset  # when clearing the dataset, we need to reassign the plot frame !!! --> this is not right!!!, but works.
-        print("self.plot_frame.dataset")
-        print(self.plot_frame.dataset)
-        self.plot_frame.clear_channels_labels()
-        self.plot_frame.check_toggles("none")
-        self.plot_frame.enable_toggles("none")
+        #self.status_bar.showMessage("Disconnected")  # showing sth is happening.
         self.serial_port.close()
         self.serial_timer.stop()
-        self.plot_frame.plot_timer.stop()
-        self.on_record_timer()  # this should save what's left to the file and clear the dataset
-        self.on_button_stop()  # and this should disable the recording, if we disconnect the serial port
-        self.record_timer.stop()
         print(SEPARATOR)
 
     def on_button_update_click(self):  # this button changes text to disconnect when a connection is succesful.
@@ -435,6 +523,8 @@ class serial_widget(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = serial_widget()
+    window = QMainWindow()
+    seria = serial_widget()
+    window.setCentralWidget(seria)
     window.show()
     app.exec_()
