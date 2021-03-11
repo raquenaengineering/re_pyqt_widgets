@@ -11,8 +11,8 @@ import csv
 import numpy as np 									# required to handle multidimensional arrays/matrices
 
 import logging
-logging.basicConfig(level=logging.DEBUG)			# enable debug messages
-#logging.basicConfig(level = logging.WARNING)
+#logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+logging.basicConfig(level = logging.WARNING)
 
 # qt imports #
 from PyQt5.QtWidgets import (
@@ -85,6 +85,20 @@ ENDLINE_OPTIONS = [
 	"Both NL & CR"
 ]
 
+class MainWindow(QMainWindow):
+
+    def __init__(self):
+        super().__init__()
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout()
+        self.widget.setLayout(self.layout)
+        self.serial = serial_widget()
+        self.layout.addWidget(self.serial)
+        self.serial_log_text = QTextEdit()
+        self.serial_log_text.setMinimumHeight(60)
+        self.layout.addWidget(self.serial_log_text)
+
 class serial_widget(QWidget):
     # class variables #
     serial_ports = list # list of serial ports detected
@@ -105,6 +119,11 @@ class serial_widget(QWidget):
     def __init__(self):
         super().__init__()
 
+        # size policies #
+        self.setMaximumHeight(100)
+        self.setContentsMargins(0,0,0,0)
+
+        #self.set
         # serial timer #
         self.serial_timer = QTimer()  # we'll use timer instead of thread
         self.serial_timer.timeout.connect(self.on_serial_timer)
@@ -112,6 +131,7 @@ class serial_widget(QWidget):
         self.serial_timer.stop()  # by default the timer will be off, enabled by connect.
 
         self.layout_serial = QHBoxLayout()
+        self.layout_serial.setContentsMargins(0,0,0,0)
         self.setLayout(self.layout_serial)
         # connect button #
         self.button_serial_connect = QPushButton("Connect")
@@ -165,12 +185,12 @@ class serial_widget(QWidget):
 
     def on_serial_timer(self):
         logging.debug("On_serial_timer")
-        print("Byte Buffer:")
         byte_buffer = ''
-        print(byte_buffer)
-        print("(type(byte_buffer))")
-        print(type(byte_buffer))
-        print(type(self.read_buffer))
+        # print("Byte Buffer:")
+        # print(byte_buffer)
+        # print("(type(byte_buffer))")
+        # print(type(byte_buffer))
+        # print(type(self.read_buffer))
         try:
             byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
         except Exception as e:
@@ -221,19 +241,17 @@ class serial_widget(QWidget):
             logging.debug("ERROR OPENING SERIAL PORT")
             self.on_port_error(e)
 
-        except:
-            logging.debug("UNKNOWN ERROR OPENING SERIAL PORT")
-
         else:  # IN CASE THERE'S NO EXCEPTION (I HOPE)
             logging.debug("SERIAL CONNECTION SUCCESFUL !")
             #self.status_bar.showMessage("Connected")
         # here we should also add going  to the "DISCONNECT" state.
 
         logging.debug("serial_port.is_open:")
-        logging.debug(self.serial_port.is_open)
+        try:
+            logging.debug(self.serial_port.is_open)
+        except:
+            logging.debug("No serial port object was created")
         logging.debug("done: ")
-
-    # logging.debug(self.done)
 
     def on_port_error(self, e):  # triggered by the serial thread, shows a window saying port is used by sb else.
 
@@ -357,7 +375,10 @@ class serial_widget(QWidget):
         self.combo_endline_params.setEnabled(True)
         self.textbox_send_command.setEnabled(False)
         #self.status_bar.showMessage("Disconnected")  # showing sth is happening.
-        self.serial_port.close()
+        try:
+            self.serial_port.close()
+        except:
+            print("Tried  to close serial port, but was already closed")
         self.serial_timer.stop()
         print(SEPARATOR)
 
@@ -376,6 +397,7 @@ class serial_widget(QWidget):
 
 
     def send_serial(self):  # do I need another thread for this ???
+        print("Send Serial")
         logging.debug("Send Serial")
         command = self.textbox_send_command.text()  # get what's on the textbox.
         self.textbox_send_command.setText("")
@@ -523,8 +545,6 @@ class serial_widget(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = QMainWindow()
-    seria = serial_widget()
-    window.setCentralWidget(seria)
+    window = MainWindow()
     window.show()
     app.exec_()
