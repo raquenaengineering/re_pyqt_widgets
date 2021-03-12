@@ -90,16 +90,18 @@ ENDLINE_OPTIONS = [
 
 class MainWindow(QMainWindow):
 
-    serial_bytes = b''                          # here we store what we get from serial port (get_read_buffer)
-    serial_data = ''                            # here the processed message(s) after parsing are stored
+    serial_bytes = b''                          # here we store what we get from serial port (get_byte_buffer)
+    serial_data = ""                            # here the processed message(s) after parsing are stored
+    logging.debug(type(serial_data))
 
     def __init__(self):
 
         self.print_timer = QTimer()  # we'll use timer instead of thread
         self.print_timer.timeout.connect(self.print_serial_data)
-        self.print_timer.start(100)  # period needs to be relatively short
+        self.print_timer.start(500)  # period needs to be relatively short
 
         super().__init__()
+
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout()
@@ -122,22 +124,42 @@ class MainWindow(QMainWindow):
 
 
     def get_serial_data(self):
-        self.serial_bytes = self.serial.get_read_buffer()
-        self.serial.clear_read_buffer()                                     # should this be included in get_read_buffer?
+        self.serial_bytes = self.serial.get_byte_buffer()
+        self.serial.clear_byte_buffer()                                         # should this be included in get_read_buffer?
 
     # triggered when there is new data available on serial_buffer
     def print_serial_data(self):
+        # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
         logging.debug("print_serial_data method called")
-        self.serial_data = self.parse_serial_bytes(self.serial_bytes)
-        print("self.serial_data")
-        print(self.serial_data)
-        if(str(self.serial_data) != b''):                                        # do nothing in case of empty string
+        #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
+        self.parse_serial_bytes(self.serial_bytes)                              # parse_serial_bytes already handles the modifications over serial_data
+        logging.debug(self.serial_data)
+        if(self.serial_data != ''):                                       # do nothing in case of empty string
             self.serial_log_text.append(str(self.serial_data))
 
-
-    def parse_serial_bytes(self,bytes):                        # maybe include this method onto the serial widget, and add different parsing methods.
-        print(str(bytes))
-        return(str(bytes))                                    # processed bytes
+    def parse_serial_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
+        logging.debug("parse_serial_bytes called")
+        try:
+            char_buffer = self.serial_bytes.decode('utf-8')                     # convert bytes to characters, so now variables make reference to chars
+        except Exception as e:
+            print(SEPARATOR)
+            # print(e)
+            self.serial.on_port_error(e)
+        else:
+            logging.debug("char_buffer:")
+            logging.debug(char_buffer)
+            logging.debug(type(char_buffer))                                    # is string, so ok
+            logging.debug(SEPARATOR)
+            self.serial_data = self.serial_data + char_buffer
+            logging.debug("self.serial_data")
+            logging.debug(self.serial_data)
+            data_lines = self.serial_data.split("\r\n")
+            self.serial_data = data_lines[-1]  # clean the buffer, saving the non completed data_points
+            a = data_lines[:-1]
+            for data_line in a:  # so all data points except last.
+                pass
+            self.serial_data = char_buffer
+            return(char_buffer)
 
     def save_log(self):
         # popup window to save in user defined location #
@@ -160,7 +182,7 @@ class serial_widget(QWidget):
     error_type = None  # flag to transmit data to the error handling
     serial_message_to_send = None  # if not none, is a message to be sent via serial port
     timeouts = 0
-    read_buffer = b''  # all chars read from serial come here, should it go somewhere else?
+    byte_buffer = b''  # all chars read from serial come here, should it go somewhere else?
     recording = False  # flag to start/stop recording.
     log_folder = "logs"  # in the beginning, log folder, path and filename are fixed
     log_file_name = "serial_log_file"  # all communication in and out (could be) collected here.
@@ -212,7 +234,7 @@ class serial_widget(QWidget):
         self.combo_serial_speed = QComboBox()
         self.combo_serial_speed.setEditable(False)						# by default it isn't editable, but just in case.
         self.combo_serial_speed.addItems(SERIAL_SPEEDS)
-        self.combo_serial_speed.setCurrentIndex(11)						# this index corresponds to 250000 as default baudrate.
+        self.combo_serial_speed.setCurrentIndex(9)						# this index corresponds to 115200 as default baudrate.
         self.combo_serial_speed.currentTextChanged.connect(				# on change on the serial speed textbox, we call the connected mthod
             self.change_serial_speed) 									# we'll figure out which is the serial speed at the method (would be possible to use a lambda?)
         self.layout_serial.addWidget(self.combo_serial_speed)				#
@@ -238,14 +260,14 @@ class serial_widget(QWidget):
 
     def on_serial_timer(self):
         logging.debug("On_serial_timer")
-        byte_buffer = b''
+        readed_bytes = b''
         # print("Byte Buffer:")
         # print(byte_buffer)
         # print("(type(byte_buffer))")
         # print(type(byte_buffer))
         # print(type(self.read_buffer))
         try:
-            byte_buffer = self.serial_port.read(SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
+            readed_bytes = self.serial_port.read(SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
         except Exception as e:
             self.on_port_error(e)
             self.on_button_disconnect_click()  # we've crashed the serial, so disconnect and REFRESH PORTS!!!
@@ -254,7 +276,7 @@ class serial_widget(QWidget):
         # after collecting some data on the byte buffer, store it in a static variable, and
         # emit a signal, so another window can subscribe to it, and handle the data when needed.
         self.new_data.emit()
-        self.read_buffer = self.read_buffer + byte_buffer
+        self.byte_buffer = self.byte_buffer + readed_bytes
 
         # if (self.parsing_style == "arduino"):
         #     self.add_arduino_data()
@@ -598,11 +620,11 @@ class serial_widget(QWidget):
         # 4. Initialization stuff required by the remote serial device:
         #self.init_emg_sensor()
 
-    def get_read_buffer(self):
-        return(self.read_buffer)
+    def get_byte_buffer(self):
+        return(self.byte_buffer)
 
-    def clear_read_buffer(self):
-        self.read_buffer = b''                              # read buffer contains bytes, so initialize to empty bytes
+    def clear_byte_buffer(self):
+        self.byte_buffer = b''                              # read buffer contains bytes, so initialize to empty bytes
 
 
 
