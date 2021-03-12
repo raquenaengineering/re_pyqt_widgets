@@ -11,8 +11,8 @@ import csv
 import numpy as np 									# required to handle multidimensional arrays/matrices
 
 import logging
-#logging.basicConfig(level=logging.DEBUG)			# enable debug messages
-logging.basicConfig(level = logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+#logging.basicConfig(level = logging.WARNING)
 
 # qt imports #
 from PyQt5.QtWidgets import (
@@ -28,6 +28,7 @@ from PyQt5.QtWidgets import (
 	QToolBar,
 	QStatusBar,
 	QDialog,
+    QFileDialog,
 	QMessageBox,														# Dialog with extended functionality.
 	QShortcut,
 	QCheckBox,
@@ -39,9 +40,11 @@ from PyQt5.QtWidgets import (
 	QWidget
 )
 
+from PyQt5 import *
+
 from PyQt5.QtGui import (
 	QIcon,
-	QKeySequence
+	QKeySequence,
 )
 
 from PyQt5.QtCore import(
@@ -87,7 +90,15 @@ ENDLINE_OPTIONS = [
 
 class MainWindow(QMainWindow):
 
+    serial_bytes = b''                          # here we store what we get from serial port (get_read_buffer)
+    serial_data = ''                            # here the processed message(s) after parsing are stored
+
     def __init__(self):
+
+        self.print_timer = QTimer()  # we'll use timer instead of thread
+        self.print_timer.timeout.connect(self.print_serial_data)
+        self.print_timer.start(100)  # period needs to be relatively short
+
         super().__init__()
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
@@ -98,14 +109,46 @@ class MainWindow(QMainWindow):
         self.serial_log_text = QTextEdit()
         self.serial_log_text.setMinimumHeight(60)
         self.layout.addWidget(self.serial_log_text)
-        self.serial.new_data.connect(self.print_serial_data)
+        self.serial.new_data.connect(self.get_serial_data)
+        self.buttons_layout = QHBoxLayout();
+        self.layout.addLayout(self.buttons_layout)
+        self.button_save_log = QPushButton("Save Log")
+        self.button_save_log.clicked.connect(self.save_log)
+        self.buttons_layout.addWidget(self.button_save_log)
+        # add a separator here
+        self.button_clear_log = QPushButton("Clear Log")
+        self.button_clear_log.clicked.connect(self.clear_log)
+        self.buttons_layout.addWidget(self.button_clear_log)
+
+
+    def get_serial_data(self):
+        self.serial_bytes = self.serial.get_read_buffer()
+        self.serial.clear_read_buffer()                                     # should this be included in get_read_buffer?
 
     # triggered when there is new data available on serial_buffer
     def print_serial_data(self):
-        #self.serial_log_text.append("1")
-        self.serial_log_text.append(str(self.serial.read_buffer))
+        logging.debug("print_serial_data method called")
+        self.serial_data = self.parse_serial_bytes(self.serial_bytes)
+        print("self.serial_data")
+        print(self.serial_data)
+        if(str(self.serial_data) != b''):                                        # do nothing in case of empty string
+            self.serial_log_text.append(str(self.serial_data))
 
 
+    def parse_serial_bytes(self,bytes):                        # maybe include this method onto the serial widget, and add different parsing methods.
+        print(str(bytes))
+        return(str(bytes))                                    # processed bytes
+
+    def save_log(self):
+        # popup window to save in user defined location #
+        name = QFileDialog.getSaveFileName(self,"Save File")
+        print("Variable file:")
+        #print(name)
+        file = open(name[0],'w')                        # first parameter contains the name of the selected file.
+        file.write(self.serial_log_text.toPlainText())
+
+    def clear_log(self):
+        self.serial_log_text.clear()
 
 class serial_widget(QWidget):
     # class variables #
@@ -207,7 +250,7 @@ class serial_widget(QWidget):
             self.on_port_error(e)
             self.on_button_disconnect_click()  # we've crashed the serial, so disconnect and REFRESH PORTS!!!
 
-        print(byte_buffer)
+        #print(byte_buffer)
         # after collecting some data on the byte buffer, store it in a static variable, and
         # emit a signal, so another window can subscribe to it, and handle the data when needed.
         self.new_data.emit()
@@ -555,8 +598,13 @@ class serial_widget(QWidget):
         # 4. Initialization stuff required by the remote serial device:
         #self.init_emg_sensor()
 
-    def on_serial_data_slot(self):
-        print("penis")
+    def get_read_buffer(self):
+        return(self.read_buffer)
+
+    def clear_read_buffer(self):
+        self.read_buffer = b''                              # read buffer contains bytes, so initialize to empty bytes
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
