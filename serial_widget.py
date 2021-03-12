@@ -98,6 +98,14 @@ class MainWindow(QMainWindow):
         self.serial_log_text = QTextEdit()
         self.serial_log_text.setMinimumHeight(60)
         self.layout.addWidget(self.serial_log_text)
+        self.serial.new_data.connect(self.print_serial_data)
+
+    # triggered when there is new data available on serial_buffer
+    def print_serial_data(self):
+        #self.serial_log_text.append("1")
+        self.serial_log_text.append(str(self.serial.read_buffer))
+
+
 
 class serial_widget(QWidget):
     # class variables #
@@ -109,12 +117,14 @@ class serial_widget(QWidget):
     error_type = None  # flag to transmit data to the error handling
     serial_message_to_send = None  # if not none, is a message to be sent via serial port
     timeouts = 0
-    read_buffer = ''  # all chars read from serial come here, should it go somewhere else?
+    read_buffer = b''  # all chars read from serial come here, should it go somewhere else?
     recording = False  # flag to start/stop recording.
     log_folder = "logs"  # in the beginning, log folder, path and filename are fixed
     log_file_name = "serial_log_file"  # all communication in and out (could be) collected here.
     log_file_type = ".txt"  # file extension
     log_full_path = None  # this variable will be the one used to record
+
+    new_data = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -185,7 +195,7 @@ class serial_widget(QWidget):
 
     def on_serial_timer(self):
         logging.debug("On_serial_timer")
-        byte_buffer = ''
+        byte_buffer = b''
         # print("Byte Buffer:")
         # print(byte_buffer)
         # print("(type(byte_buffer))")
@@ -198,7 +208,10 @@ class serial_widget(QWidget):
             self.on_button_disconnect_click()  # we've crashed the serial, so disconnect and REFRESH PORTS!!!
 
         print(byte_buffer)
-        #self.read_buffer = self.read_buffer + byte_buffer
+        # after collecting some data on the byte buffer, store it in a static variable, and
+        # emit a signal, so another window can subscribe to it, and handle the data when needed.
+        self.new_data.emit()
+        self.read_buffer = self.read_buffer + byte_buffer
 
         # if (self.parsing_style == "arduino"):
         #     self.add_arduino_data()
@@ -395,7 +408,6 @@ class serial_widget(QWidget):
             self.noserials = self.serial_port_menu.addAction("No serial Ports detected")
             self.noserials.setDisabled(True)
 
-
     def send_serial(self):  # do I need another thread for this ???
         print("Send Serial")
         logging.debug("Send Serial")
@@ -542,6 +554,9 @@ class serial_widget(QWidget):
         self.serial_timer.start()
         # 4. Initialization stuff required by the remote serial device:
         #self.init_emg_sensor()
+
+    def on_serial_data_slot(self):
+        print("penis")
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
