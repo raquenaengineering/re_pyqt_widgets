@@ -45,6 +45,7 @@ from PyQt5 import *
 from PyQt5.QtGui import (
 	QIcon,
 	QKeySequence,
+    QColor
 )
 
 from PyQt5.QtCore import(
@@ -66,6 +67,8 @@ from PyQt5.QtCore import(
 SERIAL_BUFFER_SIZE = 2000												# buffer size to store the incoming data from serial, to afterwards process it.
 SERIAL_TIMER_PERIOD_MS = 50                                             # every 'period' ms, we read the whole data at the serial buffer
 SEPARATOR = "----------------------------------------------------------"
+RECEIVE_TEXT_COLOR = "red"
+SEND_TEXT_COLOR = "green"
 SERIAL_SPEEDS = [
 	"300",
 	"1200",
@@ -100,7 +103,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
 
         self.print_timer = QTimer()  # we'll use timer instead of thread
-        self.print_timer.timeout.connect(self.print_serial_data)
+        self.print_timer.timeout.connect(self.add_log_serial_lines)
         self.print_timer.start(100)  # period needs to be relatively short
 
         super().__init__()
@@ -135,16 +138,19 @@ class MainWindow(QMainWindow):
 
 
 
-    def print_serial_data(self):
+    def add_log_serial_lines(self):
         # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
-        #logging.debug("print_serial_data method called")
+        #logging.debug("print_serial_data() method called")
         #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
         self.parse_serial_bytes(self.serial_bytes)                              # parse_serial_bytes already handles the modifications over serial_data
-        #logging.debug(self.serial_data)
+        #logging.debug(self.serial_data variable:)
         self.serial_data = ""                                                   # clearing variable, data is already used
         for line in self.serial_lines:
-            if(line != ''):                                             # do nothing in case of empty string
-                self.serial_log_text.append(str(line))
+            if(line != ''):                                                     # do nothing in case of empty string
+                color = QColor(RECEIVE_TEXT_COLOR)
+                self.serial_log_text.setTextColor(color)
+                l = ">> " + str(line)                                            # marking for incoming lines
+                self.serial_log_text.append(l)
         self.serial_lines = []                                                  # data is already on text_edit, not needed anymore
 
 
@@ -156,7 +162,7 @@ class MainWindow(QMainWindow):
 
 
     def parse_serial_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
-        logging.debug("parse_serial_bytes called")
+        logging.debug("parse_serial_bytes() method called")
         try:
             char_buffer = self.serial_bytes.decode('utf-8')                     # convert bytes to characters, so now variables make reference to chars
             self.serial_bytes = b''                                             # clean serial_bytes, or it will keep adding data
@@ -166,13 +172,13 @@ class MainWindow(QMainWindow):
             self.serial.on_port_error(e)
         else:
             # logging.debug(SEPARATOR)
-            # logging.debug("char_buffer:")
+            # logging.debug("char_buffer variable :")
             # logging.debug(char_buffer)
             # logging.debug(type(char_buffer))                                    # is string, so ok
             # logging.debug(SEPARATOR)
             self.serial_data = self.serial_data + char_buffer
             logging.debug(SEPARATOR)
-            logging.debug("self.serial_data")
+            logging.debug("self.serial_data variable:")
             logging.debug(self.serial_data)
             logging.debug(SEPARATOR)
             data_lines = self.serial_data.split(self.serial.endline)
@@ -181,7 +187,7 @@ class MainWindow(QMainWindow):
             complete_lines = data_lines[:-1]
 
             logging.debug(SEPARATOR)
-            logging.debug("data_lines")
+            logging.debug("complete_lines variable:")
             for data_line in complete_lines:
                 logging.debug(data_line)
 
@@ -509,6 +515,8 @@ class serial_widget(QWidget):
         logging.debug("serial_message_to_send")
         logging.debug(self.serial_message_to_send)
         self.serial_port.write(self.serial_message_to_send)
+
+        # add here action trigger, so it can be catched by main window.
 
 
     # other methods #
