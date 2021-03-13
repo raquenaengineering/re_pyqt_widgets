@@ -104,7 +104,11 @@ ENDLINE_OPTIONS = [
 	"Both NL & CR"
 ]
 
+
 LOG_WINDOW_REFRESH_PERIOD_MS = 100                                      # maybe better to move to an event based system.
+MAX_TEXT_SIZE = 30
+MIN_TEXT_SIZE = 5
+
 
 class MainWindow(QMainWindow):
 
@@ -129,6 +133,7 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(self.serial)
         self.serial_log_text = QTextEdit()
         self.serial_log_text.setMinimumHeight(60)
+        self.serial_log_text.setFontPointSize(10)
         self.serial_log_text.setReadOnly(True)
         self.layout.addWidget(self.serial_log_text)
         self.serial.new_data.connect(self.get_serial_bytes)
@@ -215,6 +220,27 @@ class MainWindow(QMainWindow):
             logging.debug("Error saving to file")
     def clear_log(self):
         self.serial_log_text.clear()
+
+
+    def wheelEvent(self, QWheelEvent):                                  #handle wheel events
+        modifiers = QApplication.keyboardModifiers()
+        if modifiers == Qt.ControlModifier:
+            logging.debug("CONTROL + WHEEL EVENT ")
+            current_size = self.serial_log_text.fontPointSize()         # use current text size as reference
+            logging.debug(type(QWheelEvent.angleDelta().y()))
+            if QWheelEvent.angleDelta().y() > 0:
+                current_size = current_size + 1
+                if(current_size > MAX_TEXT_SIZE):
+                    current_size = MAX_TEXT_SIZE
+            else:
+                current_size = current_size - 1
+                if(current_size < MIN_TEXT_SIZE):
+                    current_size = MIN_TEXT_SIZE
+            self.serial_log_text.setFontPointSize(current_size)
+            logging.debug(self.serial_log_text.fontPointSize())
+            # do your processing
+
+
 
 class serial_widget(QWidget):
     # class variables #
