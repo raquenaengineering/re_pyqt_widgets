@@ -164,11 +164,11 @@ class MainWindow(QMainWindow):
     def parse_serial_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
         logging.debug("parse_serial_bytes() method called")
         try:
-            char_buffer = self.serial_bytes.decode('utf-8')                     # convert bytes to characters, so now variables make reference to chars
+            char_buffer = self.serial_bytes.decode("utf-8", errors = "ignore")  # convert bytes to characters, so now variables make reference to chars
             self.serial_bytes = b''                                             # clean serial_bytes, or it will keep adding data
         except Exception as e:
-            print(SEPARATOR)
-            # print(e)
+            logging.debug(SEPARATOR)
+            # logging.debug(e)
             self.serial.on_port_error(e)
         else:
             # logging.debug(SEPARATOR)
@@ -197,8 +197,8 @@ class MainWindow(QMainWindow):
     def save_log(self):
         # popup window to save in user defined location #
         name = QFileDialog.getSaveFileName(self,"Save File")
-        print("Variable file:")
-        #print(name)
+        #logging.debug("Variable file:")
+        #logging.debug(name)
         try:
             file = open(name[0],'w')                        # first parameter contains the name of the selected file.
             file.write(self.serial_log_text.toPlainText())
@@ -298,18 +298,18 @@ class serial_widget(QWidget):
     def on_serial_timer(self):
         #logging.debug("On_serial_timer")
         readed_bytes = b''
-        # print("Byte Buffer:")
-        # print(byte_buffer)
-        # print("(type(byte_buffer))")
-        # print(type(byte_buffer))
-        # print(type(self.read_buffer))
+        # logging.debug("Byte Buffer:")
+        # logging.debug(byte_buffer)
+        # logging.debug("(type(byte_buffer))")
+        # logging.debug(type(byte_buffer))
+        # logging.debug(type(self.read_buffer))
         try:
             readed_bytes = self.serial_port.read(SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
         except Exception as e:
             self.on_port_error(e)
             self.on_button_disconnect_click()  # we've crashed the serial, so disconnect and REFRESH PORTS!!!
 
-        #print(byte_buffer)
+        #logging.debug(byte_buffer)
         # after collecting some data on the byte buffer, store it in a static variable, and
         # emit a signal, so another window can subscribe to it, and handle the data when needed.
         self.new_data.emit()
@@ -371,7 +371,7 @@ class serial_widget(QWidget):
         error_type = None
         i = desc.find("Port is already open.")
         if (i != -1):
-            print("PORT ALREADY OPEN BY THIS APPLICATION")
+            logging.debug("PORT ALREADY OPEN BY THIS APPLICATION")
             error_type = 1
             logging.debug(i)
         i = desc.find("FileNotFoundError")
@@ -476,7 +476,7 @@ class serial_widget(QWidget):
         self.first_toggles = 0
 
     def on_button_disconnect_click(self):
-        print("Disconnect Button Clicked")
+        logging.debug("on_button_disconnect_click() method called")
         self.button_serial_disconnect.setEnabled(False)  # toggle the enable of the connect/disconnect buttons
         self.button_serial_connect.setEnabled(True)
         self.button_serial_update.setEnabled(True)
@@ -490,9 +490,9 @@ class serial_widget(QWidget):
         try:
             self.serial_port.close()
         except:
-            print("Tried  to close serial port, but was already closed")
+            logging.warning("Tried  to close serial port, but was already closed")
         self.serial_timer.stop()
-        print(SEPARATOR)
+        logging.debug(SEPARATOR)
 
     def on_button_update_click(self):  # this button changes text to disconnect when a connection is succesful.
         logging.debug("Update Button Clicked")  # how to determine a connection was succesful ???
@@ -508,12 +508,12 @@ class serial_widget(QWidget):
             self.noserials.setDisabled(True)
 
     def send_serial(self):  # do I need another thread for this ???
-        print("Send Serial")
+        logging.debug("send_serial() method called")
         logging.debug("Send Serial")
         command = self.textbox_send_command.text()  # get what's on the textbox.
         self.textbox_send_command.setText("")
         # here the serial send command #
-        self.serial_message_to_send = command.encode('utf-8')  # this should have effect on the serial_thread
+        self.serial_message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
 
         logging.debug("serial_message_to_send")
         logging.debug(self.serial_message_to_send)
