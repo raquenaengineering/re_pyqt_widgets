@@ -1,3 +1,4 @@
+
 # standard imports #
 import sys											# deal with OS, open files and so
 import time 										# delays, and time measurement ?
@@ -59,13 +60,23 @@ from PyQt5.QtCore import(
 	QTimer																# nasty stuff
 )
 
-#import pyqt_common_resources.pyqt_custom_palettes as pyqt_custom_palettes
+# importing the cuustom palettes from a parent directory, if not found, just ignore palettes #
+try:
+    import os, sys
+    currentdir = os.path.dirname(os.path.realpath(__file__))
+    parentdir = os.path.dirname(currentdir)
+    sys.path.append(parentdir)
 
+    import pyqt_common_resources.pyqt_custom_palettes as pyqt_custom_palettes
+
+except:
+    logging.debug("Custom palettes not found, customization ignored")
+#from ..pyqt_common_resources.pyqt_custom_palettes import pyqt_custom_palettes
 
 # GLOBAL VARIABLES #
 
 SERIAL_BUFFER_SIZE = 2000											    # buffer size to store the incoming data from serial, to afterwards process it.
-SERIAL_TIMER_PERIOD_MS = 1000                                           # every 'period' ms, we read the whole data at the serial buffer
+SERIAL_TIMER_PERIOD_MS = 100                                            # every 'period' ms, we read the whole data at the serial buffer
 SEPARATOR = "----------------------------------------------------------"
 RECEIVE_TEXT_COLOR = "red"
 SEND_TEXT_COLOR = "green"
@@ -93,6 +104,8 @@ ENDLINE_OPTIONS = [
 	"Both NL & CR"
 ]
 
+LOG_WINDOW_REFRESH_PERIOD_MS = 100                                      # maybe better to move to an event based system.
+
 class MainWindow(QMainWindow):
 
     serial_bytes = b''                          # here we store what we get from serial port (get_byte_buffer)
@@ -104,7 +117,7 @@ class MainWindow(QMainWindow):
 
         self.print_timer = QTimer()  # we'll use timer instead of thread
         self.print_timer.timeout.connect(self.add_log_serial_lines)
-        self.print_timer.start(500)  # period needs to be relatively short
+        self.print_timer.start(LOG_WINDOW_REFRESH_PERIOD_MS)  # period needs to be relatively short
 
         super().__init__()
 
@@ -119,6 +132,7 @@ class MainWindow(QMainWindow):
         self.serial_log_text.setReadOnly(True)
         self.layout.addWidget(self.serial_log_text)
         self.serial.new_data.connect(self.get_serial_bytes)
+        self.serial.new_message_to_send.connect(self.add_log_outgoing_command)
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
         self.button_save_log = QPushButton("Save Log")
@@ -135,9 +149,6 @@ class MainWindow(QMainWindow):
         self.serial.clear_byte_buffer()                                         # as I need to return byte_buffer, I can't clean inside get_byte_buffer
     # triggered when there is new data available on serial_buffer
 
-
-
-
     def add_log_serial_lines(self):
         # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
         #logging.debug("print_serial_data() method called")
@@ -153,13 +164,11 @@ class MainWindow(QMainWindow):
                 self.serial_log_text.append(l)
         self.serial_lines = []                                                  # data is already on text_edit, not needed anymore
 
-
-
-
-
-
-
-
+    def add_log_outgoing_command(self):
+        color = QColor(SEND_TEXT_COLOR)
+        self.serial_log_text.setTextColor(color)
+        l = "<< " + self.serial.serial_message_to_send.decode("utf-8", errors = "ignore")                    # marking for outgoing lines
+        self.serial_log_text.append(l)
 
     def parse_serial_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
         logging.debug("parse_serial_bytes() method called")
@@ -226,7 +235,8 @@ class serial_widget(QWidget):
     log_file_type = ".txt"  # file extension
     log_full_path = None  # this variable will be the one used to record
 
-    new_data = pyqtSignal()
+    new_data = pyqtSignal()             # signal triggered when new data is available, to be used by parent widget.
+    new_message_to_send = pyqtSignal()  # a new message is sent to the slave, used by parent to, for example log it.
 
     def __init__(self):
         super().__init__()
@@ -518,6 +528,10 @@ class serial_widget(QWidget):
         logging.debug("serial_message_to_send")
         logging.debug(self.serial_message_to_send)
         self.serial_port.write(self.serial_message_to_send)
+        self.new_message_to_send.emit()                         # emits signal, a new message is sent to slave.
+
+        # TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
+
 
         # add here action trigger, so it can be catched by main window.
 
@@ -669,7 +683,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyle("Fusion")  # required to use it here
     window = MainWindow()
-    # window.palette = pyqt_custom_palettes.dark_palette()
-    # window.setPalette(window.palette)
+    window.palette = pyqt_custom_palettes.dark_palette()
+    window.setPalette(window.palette)
     window.show()
     app.exec_()
