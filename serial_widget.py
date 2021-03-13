@@ -64,8 +64,8 @@ from PyQt5.QtCore import(
 
 # GLOBAL VARIABLES #
 
-SERIAL_BUFFER_SIZE = 2000												# buffer size to store the incoming data from serial, to afterwards process it.
-SERIAL_TIMER_PERIOD_MS = 50                                             # every 'period' ms, we read the whole data at the serial buffer
+SERIAL_BUFFER_SIZE = 2000											    # buffer size to store the incoming data from serial, to afterwards process it.
+SERIAL_TIMER_PERIOD_MS = 1000                                           # every 'period' ms, we read the whole data at the serial buffer
 SEPARATOR = "----------------------------------------------------------"
 RECEIVE_TEXT_COLOR = "red"
 SEND_TEXT_COLOR = "green"
@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
 
         self.print_timer = QTimer()  # we'll use timer instead of thread
         self.print_timer.timeout.connect(self.add_log_serial_lines)
-        self.print_timer.start(100)  # period needs to be relatively short
+        self.print_timer.start(500)  # period needs to be relatively short
 
         super().__init__()
 
@@ -199,9 +199,11 @@ class MainWindow(QMainWindow):
         name = QFileDialog.getSaveFileName(self,"Save File")
         print("Variable file:")
         #print(name)
-        file = open(name[0],'w')                        # first parameter contains the name of the selected file.
-        file.write(self.serial_log_text.toPlainText())
-
+        try:
+            file = open(name[0],'w')                        # first parameter contains the name of the selected file.
+            file.write(self.serial_log_text.toPlainText())
+        except:
+            logging.debug("Error saving to file")
     def clear_log(self):
         self.serial_log_text.clear()
 
@@ -209,7 +211,8 @@ class serial_widget(QWidget):
     # class variables #
     serial_ports = list # list of serial ports detected
     serial_port = None  # serial port used for the communication
-    serial_connected = False # variable to poll if port connected or not (useful for parent)
+    serial_connected = False
+    c = False # variable to poll if port connected or not (useful for parent)
     serial_port_name = None  # used to pass it to the worker dealing with the serial port.
     serial_baudrate = 115200  # default baudrate
     endline = '\r\n'  # default value for endline is CR+NL
