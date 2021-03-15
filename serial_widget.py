@@ -46,7 +46,8 @@ from PyQt5 import *
 from PyQt5.QtGui import (
 	QIcon,
 	QKeySequence,
-    QColor
+    QColor,
+    QFont
 )
 
 from PyQt5.QtCore import(
@@ -115,7 +116,8 @@ class MainWindow(QMainWindow):
     serial_bytes = b''                          # here we store what we get from serial port (get_byte_buffer)
     serial_data = ""                            # here the processed message(s) after parsing are stored
     serial_lines = []                           # the serial data could contain several lines, this variable holds them.
-    logging.debug(type(serial_data))
+    font_size = 10
+
 
     def __init__(self):
 
@@ -170,10 +172,11 @@ class MainWindow(QMainWindow):
         self.serial_lines = []                                                  # data is already on text_edit, not needed anymore
 
     def add_log_outgoing_command(self):
-        color = QColor(SEND_TEXT_COLOR)
-        self.serial_log_text.setTextColor(color)
-        l = "<< " + self.serial.serial_message_to_send.decode("utf-8", errors = "ignore")                    # marking for outgoing lines
-        self.serial_log_text.append(l)
+        if(self.serial.echo_flag == True):
+            color = QColor(SEND_TEXT_COLOR)
+            self.serial_log_text.setTextColor(color)
+            l = "<< " + self.serial.serial_message_to_send.decode("utf-8", errors = "ignore")                    # marking for outgoing lines
+            self.serial_log_text.append(l)
 
     def parse_serial_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
         logging.debug("parse_serial_bytes() method called")
@@ -195,7 +198,10 @@ class MainWindow(QMainWindow):
             logging.debug("self.serial_data variable:")
             logging.debug(self.serial_data)
             logging.debug(SEPARATOR)
-            data_lines = self.serial_data.split(self.serial.endline)
+            endline_str = self.serial.endline.decode("utf-8")
+            data_lines = self.serial_data.split(endline_str)        # endlines are defined as n
+            logging.debug("str(self.serial.endline)")
+            logging.debug(str(self.serial.endline))
             self.serial_data = data_lines[-1]  # clean the buffer, saving the non completed data_points
 
             complete_lines = data_lines[:-1]
@@ -226,20 +232,22 @@ class MainWindow(QMainWindow):
         modifiers = QApplication.keyboardModifiers()
         if modifiers == Qt.ControlModifier:
             logging.debug("CONTROL + WHEEL EVENT ")
-            current_size = self.serial_log_text.fontPointSize()         # use current text size as reference
+            current_size = self.font_size
             logging.debug(type(QWheelEvent.angleDelta().y()))
             if QWheelEvent.angleDelta().y() > 0:
-                current_size = current_size + 1
-                if(current_size > MAX_TEXT_SIZE):
-                    current_size = MAX_TEXT_SIZE
+                self.font_size = self.font_size + 1
+                if(self.font_size > MAX_TEXT_SIZE):
+                    self.font_size = MAX_TEXT_SIZE
             else:
-                current_size = current_size - 1
-                if(current_size < MIN_TEXT_SIZE):
-                    current_size = MIN_TEXT_SIZE
-            self.serial_log_text.setFontPointSize(current_size)
-            logging.debug(self.serial_log_text.fontPointSize())
-            # do your processing
+                self.font_size = self.font_size - 1
+                if(self.font_size < MIN_TEXT_SIZE):
+                    self.font_size = MIN_TEXT_SIZE
 
+            #logging.debug("Font size = " + str(self.font_size))
+            font = QFont()
+            #font.setPointSize(self.font_size)                           # doesn't seem to work...
+            #self.serial_log_text.setFont(font)
+            self.serial_log_text.setFontPointSize(self.font_size)      # this changes only the newly added text size.
 
 
 class serial_widget(QWidget):
@@ -250,9 +258,10 @@ class serial_widget(QWidget):
     c = False # variable to poll if port connected or not (useful for parent)
     serial_port_name = None  # used to pass it to the worker dealing with the serial port.
     serial_baudrate = 115200  # default baudrate
-    endline = '\r\n'  # default value for endline is CR+NL
+    endline = b'\r\n'  # default value for endline is CR+NL
     error_type = None  # flag to transmit data to the error handling
     serial_message_to_send = None  # if not none, is a message to be sent via serial port
+    echo_flag = False
     timeouts = 0
     byte_buffer = b''  # all chars read from serial come here, should it go somewhere else?
     recording = False  # flag to start/stop recording.
@@ -322,6 +331,11 @@ class serial_widget(QWidget):
         self.b_send = QPushButton("Send")
         self.b_send.clicked.connect(self.send_serial)					# same action as enter in textbox
         self.layout_serial.addWidget(self.b_send)
+        # checkbox echo#
+        self.check_echo = QCheckBox("Echo")
+        self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
+        self.check_echo.clicked.connect(self.on_check_echo)
+        self.layout_serial.addWidget(self.check_echo)
         # combo endline #
         self.combo_endline_params = QComboBox()
         self.combo_endline_params.addItems(ENDLINE_OPTIONS)
@@ -543,6 +557,14 @@ class serial_widget(QWidget):
             self.noserials = self.serial_port_menu.addAction("No serial Ports detected")
             self.noserials.setDisabled(True)
 
+    def on_check_echo(self):
+        val = self.check_echo.checkState()
+        if(val == 0):
+            self.echo_flag = False
+        else:
+            self.echo_flag = True
+        logging.debug(self.echo_flag)
+
     def send_serial(self):  # do I need another thread for this ???
         logging.debug("send_serial() method called")
         logging.debug("Send Serial")
@@ -677,7 +699,7 @@ class serial_widget(QWidget):
         logging.debug(endline_style)
         # FIND A MORE ELEGANT AND PYTHONIC WAY TO DO THIS.
         if (endline_style == ENDLINE_OPTIONS[0]):  # "No Line Adjust"
-            self.endline = b""
+            self.endline = b"\0"                                        # doesn't seem to work with empty, and this is the character determining end of string.
         elif (endline_style == ENDLINE_OPTIONS[1]):  # "New Line"
             self.endline = b"\n"
         elif (endline_style == ENDLINE_OPTIONS[2]):  # "Carriage Return"
