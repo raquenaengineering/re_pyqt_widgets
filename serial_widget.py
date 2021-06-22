@@ -13,6 +13,8 @@ import numpy as np 									# required to handle multidimensional arrays/matrice
 
 import logging
 logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+
+
 #logging.basicConfig(level = logging.WARNING)
 
 # qt imports #
@@ -61,7 +63,7 @@ from PyQt5.QtCore import(
 	QTimer																# nasty stuff
 )
 
-# importing the cuustom palettes from a parent directory, if not found, just ignore palettes #
+# importing the custom palettes from a parent directory, if not found, just ignore palettes #
 try:
     import os, sys
     currentdir = os.path.dirname(os.path.realpath(__file__))
@@ -264,7 +266,6 @@ class serial_widget(QWidget):
     echo_flag = False
     timeouts = 0
     byte_buffer = b''  # all chars read from serial come here, should it go somewhere else?
-    recording = False  # flag to start/stop recording.
     log_folder = "logs"  # in the beginning, log folder, path and filename are fixed
     log_file_name = "serial_log_file"  # all communication in and out (could be) collected here.
     log_file_type = ".txt"  # file extension
