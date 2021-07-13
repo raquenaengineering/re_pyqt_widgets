@@ -12,7 +12,7 @@ import csv
 import numpy as np 									# required to handle multidimensional arrays/matrices
 
 import logging
-logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+logging.basicConfig(level=logging.WARNING)			# enable debug messages
 
 
 #logging.basicConfig(level = logging.WARNING)
@@ -258,9 +258,9 @@ class serial_widget(QWidget):
     serial_port = None  # serial port used for the communication
     serial_connected = False
     c = False # variable to poll if port connected or not (useful for parent)
-    serial_port_name = None  # used to pass it to the worker dealing with the serial port.
-    serial_baudrate = 115200  # default baudrate
-    endline = b'\r\n'  # default value for endline is CR+NL
+    serial_port_name = None     # used to pass it to the worker dealing with the serial port.
+    serial_baudrate = None    # default baudrate
+    endline = None              # no default value for endline, will be assigned on initialisation.
     error_type = None  # flag to transmit data to the error handling
     serial_message_to_send = None  # if not none, is a message to be sent via serial port
     echo_flag = False
@@ -320,7 +320,8 @@ class serial_widget(QWidget):
         self.combo_serial_speed.setCurrentIndex(9)						# this index corresponds to 115200 as default baudrate.
         self.combo_serial_speed.currentTextChanged.connect(				# on change on the serial speed textbox, we call the connected mthod
             self.change_serial_speed) 									# we'll figure out which is the serial speed at the method (would be possible to use a lambda?)
-        self.layout_serial.addWidget(self.combo_serial_speed)				#
+        self.change_serial_speed()                                      # sets the default serial speed (different from None)
+        self.layout_serial.addWidget(self.combo_serial_speed)			#
         self.label_baud = QLabel("baud")
         self.layout_serial.addWidget(self.label_baud)
         # text box command #
@@ -340,8 +341,9 @@ class serial_widget(QWidget):
         # combo endline #
         self.combo_endline_params = QComboBox()
         self.combo_endline_params.addItems(ENDLINE_OPTIONS)
-        self.combo_endline_params.setCurrentIndex(3)					# defaults to endline with CR & NL
+        self.combo_endline_params.setCurrentIndex(1)					# defaults to endline with NL
         self.combo_endline_params.currentTextChanged.connect(self.change_endline_style)
+        self.change_endline_style()                                     # sets the default endline style
         self.layout_serial.addWidget(self.combo_endline_params)
 
     # methods #
@@ -572,10 +574,12 @@ class serial_widget(QWidget):
         command = self.textbox_send_command.text()  # get what's on the textbox.
         self.textbox_send_command.setText("")
         # here the serial send command #
-        self.serial_message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
 
-        logging.debug("serial_message_to_send")
-        logging.debug(self.serial_message_to_send)
+        self.serial_message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
+        self.serial_message_to_send = self.serial_message_to_send + self.endline
+
+        print("serial_message_to_send")
+        print(self.serial_message_to_send)
         self.serial_port.write(self.serial_message_to_send)
         self.new_message_to_send.emit()                         # emits signal, a new message is sent to slave.
 
@@ -700,7 +704,7 @@ class serial_widget(QWidget):
         logging.debug(endline_style)
         # FIND A MORE ELEGANT AND PYTHONIC WAY TO DO THIS.
         if (endline_style == ENDLINE_OPTIONS[0]):  # "No Line Adjust"
-            self.endline = b"\0"                                        # doesn't seem to work with empty, and this is the character determining end of string.
+            pass #self.endline = b""                                        # doesn't seem to work with empty, and this is the character determining end of string.
         elif (endline_style == ENDLINE_OPTIONS[1]):  # "New Line"
             self.endline = b"\n"
         elif (endline_style == ENDLINE_OPTIONS[2]):  # "Carriage Return"
@@ -709,6 +713,9 @@ class serial_widget(QWidget):
             self.endline = b"\r\n"
 
         logging.debug(self.endline)
+
+        print("Endline:")
+        print(self.endline)
 
     def start_serial(self):
         # first ensure connection os properly made
