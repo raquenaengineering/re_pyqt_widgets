@@ -142,6 +142,54 @@ class terminal_widget(QWidget):
         self.setMaximumHeight(100)
         self.setContentsMargins(0, 0, 0, 0)
 
+        # general top layout #
+        self.layout_main = QVBoxLayout()
+        self.setLayout(self.layout_main)
+
+        # layout containing specific connection plus connect and disconnect buttons #
+        self.layout_upper = QHBoxLayout()
+        self.layout_main.addLayout(self.layout_upper)
+
+        self.layout_specific_connection = QHBoxLayout()
+        self.layout_specific_connection.setContentsMargins(0,0,0,0)
+        self.layout_upper.addLayout(self.layout_specific_connection)
+
+        self.layout_connect_disconnect = QHBoxLayout()
+        self.layout_connect_disconnect.setContentsMargins(0,0,0,0)
+        self.layout_upper.addLayout(self.layout_connect_disconnect)
+
+        # connect button COMMON#
+        self.button_connect = QPushButton("Connect")
+        self.button_connect.clicked.connect(self.on_button_connect_click)
+        self.button_connect.setEnabled(True)
+        self.layout_connect_disconnect.addWidget(self.button_connect)
+
+        # disconnect button COMMON #
+        self.button_disconnect = QPushButton("Disconnect")
+        self.button_disconnect.clicked.connect(self.on_button_disconnect_click)
+        self.button_disconnect.setEnabled(False)
+        self.layout_connect_disconnect.addWidget(self.button_disconnect)
+
+        # layout to send data to remote device COMMON #
+        self.layout_send = QHBoxLayout()
+        self.layout_main.addLayout(self.layout_send)
+        # text box command #
+        self.textbox_send_command = QLineEdit()
+        self.textbox_send_command.returnPressed.connect(self.send_sock)	# sends command via serial port
+        self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
+        self.layout_send.addWidget(self.textbox_send_command)
+        # send button #
+        self.b_send = QPushButton("Send")
+        self.b_send.clicked.connect(self.send_sock)					# same action as enter in textbox
+        self.b_send.setEnabled(False)
+        self.layout_send.addWidget(self.b_send)
+        # checkbox echo#
+        self.check_echo = QCheckBox("Echo")
+        self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
+        self.check_echo.clicked.connect(self.on_check_echo)
+        self.layout_send.addWidget(self.check_echo)
+
+
 
     #COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
     # maybe it's interesting to consider doing it via SIGNAL TRIGGER
@@ -164,6 +212,12 @@ class terminal_widget(QWidget):
             logging.debug("Error saving to file")
     def clear_log(self):
         self.log_text.clear()
+
+    def on_button_connect_click(self):
+        pass
+
+    def on_button_disconnect_click(self):
+        pass
 
 
 
@@ -230,19 +284,12 @@ class terminal_widget(QWidget):
     #
     #
     # # methods #
-    #
-    # def on_read_data_timer(self):
-    #     logging.debug("on_read_data_timer() method called")
+
     # def connect(self):
     #     pass
     #
     #
     # def on_conn_error(self, e):  # triggered by the serial thread, shows a window saying port is used by sb else.
-    #     pass
-    # def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
-    #     pass
-    #
-    # def on_button_disconnect_click(self):
     #     pass
     #
     # def on_check_echo(self):

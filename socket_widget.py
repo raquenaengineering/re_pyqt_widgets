@@ -114,67 +114,60 @@ class socket_widget(terminal_widget):
 
 
         # self.set
-        # serial timer #
-        self.sock_timer = QTimer()  # we'll use timer instead of thread
-        self.sock_timer.timeout.connect(self.on_read_data_timer)
-        self.sock_timer.start(100)  # period needs to be relatively short
-        self.sock_timer.stop()  # by default the timer will be off, enabled by connect.
 
-        self.layout_main = QVBoxLayout()
-        self.setLayout(self.layout_main)
 
-        self.layout_sock = QHBoxLayout()
-        self.layout_sock.setContentsMargins(0,0,0,0)
-        self.layout_main.addLayout(self.layout_sock)
+        # self.layout_main = QVBoxLayout()
+        # self.setLayout(self.layout_main)
+
         # IP label #
         self.label_ip = QLabel("IP:")
-        self.layout_sock.addWidget(self.label_ip)
+        self.layout_specific_connection.addWidget(self.label_ip)
         # text box IP #
         self.textbox_ip = QLineEdit()
         self.textbox_ip.setInputMask("000.000.000.000;_")
         self.textbox_ip.setText(DEFAULT_IP)                       # current default value, so we don't have to type it all the time
         self.textbox_ip.setEnabled(True)						        # not enabled until serial port is connected.
-        self.layout_sock.addWidget(self.textbox_ip)
+        self.layout_specific_connection.addWidget(self.textbox_ip)
 
         # port label #
         self.label_port = QLabel("Port:")
-        self.layout_sock.addWidget(self.label_port)
+        self.layout_specific_connection.addWidget(self.label_port)
         # port text box #
         self.textbox_port = QLineEdit()
         self.textbox_port.setText(str(DEFAULT_PORT))                                  # default port, so faster for debugging
         self.textbox_port.setEnabled(True)						        # not enabled until serial port is connected.
-        self.layout_sock.addWidget(self.textbox_port)
+        self.layout_specific_connection.addWidget(self.textbox_port)
 
 
-        # connect button #
-        self.button_sock_connect = QPushButton("Connect")
-        self.button_sock_connect.clicked.connect(self.on_button_connect_click)
-        self.button_sock_connect.setEnabled(True)
-        self.layout_sock.addWidget(self.button_sock_connect)
-        # disconnect button #
-        self.button_sock_disconnect = QPushButton("Disconnect")
-        self.button_sock_disconnect.clicked.connect(self.on_button_disconnect_click)
-        self.button_sock_disconnect.setEnabled(False)
-        self.layout_sock.addWidget(self.button_sock_disconnect)
+        # # connect button #
+        # self.button_sock_connect = QPushButton("Connect")
+        # self.button_sock_connect.clicked.connect(self.on_button_connect_click)
+        # self.button_sock_connect.setEnabled(True)
+        # self.layout_specific_connection.addWidget(self.button_connect)
+        # # disconnect button #
+        # self.button_sock_disconnect = QPushButton("Disconnect")
+        # self.button_sock_disconnect.clicked.connect(self.on_button_disconnect_click)
+        # self.button_sock_disconnect.setEnabled(False)
+        # self.layout_specific_connection.addWidget(self.button_disconnect)
 
 
-        self.layout_send = QHBoxLayout()
-        self.layout_main.addLayout(self.layout_send)
-        # text box command #
-        self.textbox_send_command = QLineEdit()
-        self.textbox_send_command.returnPressed.connect(self.send_sock)	# sends command via serial port
-        self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
-        self.layout_send.addWidget(self.textbox_send_command)
-        # send button #
-        self.b_send = QPushButton("Send")
-        self.b_send.clicked.connect(self.send_sock)					# same action as enter in textbox
-        self.b_send.setEnabled(False)
-        self.layout_send.addWidget(self.b_send)
-        # checkbox echo#
-        self.check_echo = QCheckBox("Echo")
-        self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
-        self.check_echo.clicked.connect(self.on_check_echo)
-        self.layout_send.addWidget(self.check_echo)
+        # self.layout_send = QHBoxLayout()
+        # self.layout_main.addLayout(self.layout_send)
+        # # text box command #
+        # self.textbox_send_command = QLineEdit()
+        # self.textbox_send_command.returnPressed.connect(self.send_sock)	# sends command via serial port
+        # self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
+        # self.layout_send.addWidget(self.textbox_send_command)
+        # # send button #
+        # self.b_send = QPushButton("Send")
+        # self.b_send.clicked.connect(self.send_sock)					# same action as enter in textbox
+        # self.b_send.setEnabled(False)
+        # self.layout_send.addWidget(self.b_send)
+        # # checkbox echo#
+        # self.check_echo = QCheckBox("Echo")
+        # self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
+        # self.check_echo.clicked.connect(self.on_check_echo)
+        # self.layout_send.addWidget(self.check_echo)
 
     #
     # def on_read_data_timer(self):
@@ -260,18 +253,21 @@ class socket_widget(terminal_widget):
             logging.debug("Socket connected")
 
         # enabling a timer to read in the incoming data of the socket #
-        self.sock_timer.start()
+        self.read_data_timer.start()
+
+        print("PENIS")
 
         # UI changes #
-        self.button_sock_connect.setEnabled(False)
-        self.button_sock_disconnect.setEnabled(True)
+        self.button_connect.setEnabled(False)
+        self.button_disconnect.setEnabled(True)
         self.textbox_send_command.setEnabled(True)
         self.b_send.setEnabled(True)
 
 
+
     def on_button_disconnect_click(self):
         # critical stuff to stop #
-        self.sock_timer.stop()                              # need to stop the timer, or it will continue trying to get that from the closed socket
+        self.read_data_timer.stop()                              # need to stop the timer, or it will continue trying to get that from the closed socket
         self.socket.close()
         logging.debug("Socket closed")
         # clearing variables #
@@ -279,8 +275,8 @@ class socket_widget(terminal_widget):
         self.port = None
         self.socket = None                                  #if not closing the socket first, the app crashes
         # updating UI to current state #
-        self.button_sock_disconnect.setEnabled(False)
-        self.button_sock_connect.setEnabled(True)
+        self.button_disconnect.setEnabled(False)
+        self.button_connect.setEnabled(True)
         self.textbox_send_command.setEnabled(False)
         self.b_send.setEnabled(False)
 
