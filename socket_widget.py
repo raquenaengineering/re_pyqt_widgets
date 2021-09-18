@@ -65,6 +65,9 @@ from PyQt5.QtCore import(
 	QTimer																# nasty stuff
 )
 
+# custom imports #
+from terminal_widget import terminal_widget
+
 # importing the custom palettes from a parent directory, if not found, just ignore palettes #
 try:
     import os, sys
@@ -93,7 +96,7 @@ DEFAULT_PORT = 8051
 
 SEPARATOR = "----------------------------------------------------------"
 
-class socket_widget(QWidget):
+class socket_widget(terminal_widget):
 
 
     ip_address = None                                                                       # ip address of the remote device to be used
@@ -109,14 +112,11 @@ class socket_widget(QWidget):
 
         super().__init__()
 
-        # size policies #
-        self.setMaximumHeight(100)
-        self.setContentsMargins(0, 0, 0, 0)
 
         # self.set
         # serial timer #
         self.sock_timer = QTimer()  # we'll use timer instead of thread
-        self.sock_timer.timeout.connect(self.on_sock_timer)
+        self.sock_timer.timeout.connect(self.on_read_data_timer)
         self.sock_timer.start(100)  # period needs to be relatively short
         self.sock_timer.stop()  # by default the timer will be off, enabled by connect.
 
@@ -176,11 +176,41 @@ class socket_widget(QWidget):
         self.check_echo.clicked.connect(self.on_check_echo)
         self.layout_send.addWidget(self.check_echo)
 
+    #
+    # def on_read_data_timer(self):
+    #
+    #     # try:
+    #     #     self.socket.send(bytes('?', 'utf-8'))
+    #     # except Error as e:
+    #     #     logging.debug(e)
+    #
+    #
+    #     try:
+    #         bytes = self.socket.recv(1000)                                          # tested with 2000*8 samples on the ESP32 side
+    #     except:
+    #         logging.error("Couldn't read data from remote device")
+    #         logging.error("Is the device still connected?")
+    #         self.on_button_disconnect_click()                                       # maybe should be self.disconnect instead...
+    #         d = QMessageBox.critical(
+    #             self,
+    #             "Remote device Unreachable",
+    #             "Is not possible to reach the remote device, please check its battery status.\n"
+    #             "If this message shows when the remote is working for sure, try to increase the connection timeout",
+    #
+    #             buttons=QMessageBox.Ok
+    #         )
+    #     else:
+    #         chars = bytes.decode('utf-8')
+    #         #print(chars)
+    #         file = open("incoming_data.txt",'a', newline = '')
+    #         logging.debug("saved to file")
+    #
+    #         file.write(chars)
 
 
 
 
-    def on_sock_timer(self):
+    def on_read_data_timer(self):
 
         # try:
         #     self.socket.send(bytes('?', 'utf-8'))

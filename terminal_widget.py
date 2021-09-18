@@ -94,16 +94,13 @@ except:
     logging.debug("Custom palettes not found, customization ignored")
 #from ..pyqt_common_resources.pyqt_custom_palettes import pyqt_custom_palettes
 
-
-SERIAL_TIMER_PERIOD_MS = 500
-RECEIVE_TEXT_COLOR = "red"
-SEND_TEXT_COLOR = "green"
-SEPARATOR = "----------------------------------------------------------"
-
-
-
 class terminal_widget(QWidget):
     # class variables #
+
+    RECEIVE_TEXT_COLOR = "red"
+    SEND_TEXT_COLOR = "green"
+    SEPARATOR = "----------------------------------------------------------"
+
     connected = False
     message_to_send = None              # if not none, is a message to be sent via serial port
     echo_flag = False
@@ -139,160 +136,22 @@ class terminal_widget(QWidget):
         self.print_timer = QTimer()  # we'll use timer instead of thread
         self.print_timer.timeout.connect(self.add_lines_to_log)
         self.print_timer.start(self.log_window_refresh_period)  # period needs to be relatively short
-        self.read_data_timer.stop()  # by default the timer will be off, enabled by connect.
+        self.print_timer.stop()  # by default the timer will be off, enabled by connect.
+
+        # size policies, COMMON#
+        self.setMaximumHeight(100)
+        self.setContentsMargins(0, 0, 0, 0)
 
 
-        # size policies #
-        #self.setMaximumHeight(100)     # as now the textbox is included in the widget, the policy needs to be different
-        self.setContentsMargins(0,0,0,0)
-        # general top layout #
-        self.layout_general = QVBoxLayout()
-        self.setLayout(self.layout_general)
-        # CONNECT LAYOUT , which contains the specifis of each conection type #
-        self.layout_connect = QHBoxLayout()
-        self.layout_general.addLayout(self.layout_connect)
-        # specific connection parameters for each type of connection (implemented in child class)
-        self.layout_specifics = QHBoxLayout()
-        self.layout_connect.addLayout(self.layout_specifics)
-        # connect button #
-        self.button_connect = QPushButton("Connect")
-        self.button_connect.clicked.connect(self.on_button_connect_click)
-        self.layout_connect.addWidget(self.button_connect)
-        # disconnect button #
-        self.button_disconnect = QPushButton("Disconnect")
-        self.button_disconnect.clicked.connect(self.on_button_disconnect_click)
-        self.button_disconnect.setEnabled(False)
-        self.layout_connect.addWidget(self.button_disconnect)
-        # SEND DATA DIVISION #
-        self.layout_send = QHBoxLayout()
-        self.layout_general.addLayout(self.layout_send)
-        self.textbox_send = QLineEdit()
-        self.textbox_send.returnPressed.connect(self.send)	# sends command via serial port
-        self.textbox_send.setEnabled(False)						# not enabled until serial port is connected.
-        self.layout_send.addWidget(self.textbox_send)
-        # send button #
-        self.button_send = QPushButton("Send")
-        self.button_send.clicked.connect(self.send)					# same action as enter in textbox
-        self.layout_send.addWidget(self.button_send)
-        if(self.log_window_flag == True):
-        # checkbox echo#
-            self.check_echo = QCheckBox("Echo")
-            self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
-            self.check_echo.clicked.connect(self.on_check_echo)
-            self.layout_send.addWidget(self.check_echo)
-        # RECEIVE DATA DIVISION #
-            self.layout_receive = QVBoxLayout()
-            self.layout_general.addLayout(self.layout_receive)
-            # log text #
-            self.log_text = QTextEdit()
-            self.log_text.setMinimumHeight(60)
-            self.log_text.setFontPointSize(10)
-            self.log_text.setReadOnly(True)
-            self.layout_receive.addWidget(self.log_text)
-            # layout for the buttons related with the log
-            self.layout_receive_buttons = QHBoxLayout()
-            self.layout_receive.addLayout(self.layout_receive_buttons)
-            self.button_save_log = QPushButton("Save Log")
-            self.button_save_log.clicked.connect(self.save_log)
-            self.layout_receive_buttons.addWidget(self.button_save_log)
-            # add a separator here
-            self.button_clear_log = QPushButton("Clear Log")
-            self.button_clear_log.clicked.connect(self.clear_log)
-            self.layout_receive_buttons.addWidget(self.button_clear_log)
-
-
-    # methods #
-
+    #COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
+    # maybe it's interesting to consider doing it via SIGNAL TRIGGER
     def on_read_data_timer(self):
-        logging.debug("on_read_data_timer() method called")
-    def connect(self):
         pass
-
-
-    def on_conn_error(self, e):  # triggered by the serial thread, shows a window saying port is used by sb else.
-        pass
-    def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
-        pass
-
-    def on_button_disconnect_click(self):
-        pass
-
-    def on_check_echo(self):
-        val = self.check_echo.checkState()
-        if(val == 0):
-            self.echo_flag = False
-        else:
-            self.echo_flag = True
-        logging.debug(self.echo_flag)
-
-    def send(self):  # may I need another thread for this ???
-        pass
-
-        # TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
-
-
-    #     # add here action trigger, so it can be catched by main window.
-    #
-    # def get_byte_buffer(self):
-    #     return(self.byte_buffer)
-    #
-    # def clear_byte_buffer(self):
-    #     self.byte_buffer = b''                              # read buffer contains bytes, so initialize to empty bytes
-
+    # COMMON: every time this function is called, all completed lines are added to the log window
     def add_lines_to_log(self):
-        # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
-        #logging.debug("print_serial_data() method called")
-        #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
-        self.parse_bytes(self.readed_bytes)                                     # parse_serial_bytes already handles the modifications over serial_data
-        #logging.debug(self.serial_data variable:)
-        # self.serial_data = ""                                                   # clearing variable, data is already used
-        # for line in self.lines:
-        #     if(line != ''):                                                     # do nothing in case of empty string
-        #         color = QColor(RECEIVE_TEXT_COLOR)
-        #         self.serial_log_text.setTextColor(color)
-        #         l = ">> " + str(line)                                            # marking for incoming lines
-        #         self.serial_log_text.append(l)
-        # self.serial_lines = []                                                  # data is already on text_edit, not needed anymore
+        pass
 
-    def parse_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
-        logging.debug("parse_bytes() method called")
-        try:
-            char_buffer = self.readed_bytes.decode("utf-8", errors = "ignore")  # convert bytes to characters, so now variables make reference to chars
-            self.readed_bytes = b''                                             # clean serial_bytes, or it will keep adding data
-            logging.debug("data got into char_buffer")
-        except Exception as e:
-            logging.debug(SEPARATOR)
-            # logging.debug(e)
-            self.serial.on_port_error(e)
-        else:
-            # logging.debug(SEPARATOR)
-            # logging.debug("char_buffer variable :")
-            # logging.debug(char_buffer)
-            # logging.debug(type(char_buffer))                                    # is string, so ok
-            # logging.debug(SEPARATOR)
-            self.read_data = self.read_data + char_buffer
-            logging.debug(SEPARATOR)
-            logging.debug("self.read_data variable:")
-            logging.debug(self.read_data)
-            logging.debug(SEPARATOR)
-            endline_str = self.endline.decode("utf-8")
-            data_lines = self.read_data.split(endline_str)        # endlines are defined as n
-            logging.debug("str(self.serial.endline)")
-            logging.debug(str(self.endline))
-            self.read_data = data_lines[-1]  # clean the buffer, saving the non completed data_points
-
-            complete_lines = data_lines[:-1]
-
-            logging.debug(SEPARATOR)
-            logging.debug("complete_lines variable:")
-            for data_line in complete_lines:
-                logging.debug(data_line)
-
-            for data_line in complete_lines:  # so all data points except last.
-                self.serial_lines.append(data_line)
-
-
-
+    # COMMON: both serial and socket have a button to save the current log #
     def save_log(self):
         # popup window to save in user defined location #
         name = QFileDialog.getSaveFileName(self,"Save File")
@@ -306,6 +165,176 @@ class terminal_widget(QWidget):
     def clear_log(self):
         self.log_text.clear()
 
+
+
+
+    #
+    #
+    #     # size policies #
+    #     #self.setMaximumHeight(100)     # as now the textbox is included in the widget, the policy needs to be different
+    #     self.setContentsMargins(0,0,0,0)
+    #     # general top layout #
+    #     self.layout_general = QVBoxLayout()
+    #     self.setLayout(self.layout_general)
+    #     # CONNECT LAYOUT , which contains the specifis of each conection type #
+    #     self.layout_connect = QHBoxLayout()
+    #     self.layout_general.addLayout(self.layout_connect)
+    #     # specific connection parameters for each type of connection (implemented in child class)
+    #     self.layout_specifics = QHBoxLayout()
+    #     self.layout_connect.addLayout(self.layout_specifics)
+    #     # connect button #
+    #     self.button_connect = QPushButton("Connect")
+    #     self.button_connect.clicked.connect(self.on_button_connect_click)
+    #     self.layout_connect.addWidget(self.button_connect)
+    #     # disconnect button #
+    #     self.button_disconnect = QPushButton("Disconnect")
+    #     self.button_disconnect.clicked.connect(self.on_button_disconnect_click)
+    #     self.button_disconnect.setEnabled(False)
+    #     self.layout_connect.addWidget(self.button_disconnect)
+    #     # SEND DATA DIVISION #
+    #     self.layout_send = QHBoxLayout()
+    #     self.layout_general.addLayout(self.layout_send)
+    #     self.textbox_send = QLineEdit()
+    #     self.textbox_send.returnPressed.connect(self.send)	# sends command via serial port
+    #     self.textbox_send.setEnabled(False)						# not enabled until serial port is connected.
+    #     self.layout_send.addWidget(self.textbox_send)
+    #     # send button #
+    #     self.button_send = QPushButton("Send")
+    #     self.button_send.clicked.connect(self.send)					# same action as enter in textbox
+    #     self.layout_send.addWidget(self.button_send)
+    #     if(self.log_window_flag == True):
+    #     # checkbox echo#
+    #         self.check_echo = QCheckBox("Echo")
+    #         self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
+    #         self.check_echo.clicked.connect(self.on_check_echo)
+    #         self.layout_send.addWidget(self.check_echo)
+    #     # RECEIVE DATA DIVISION #
+    #         self.layout_receive = QVBoxLayout()
+    #         self.layout_general.addLayout(self.layout_receive)
+    #         # log text #
+    #         self.log_text = QTextEdit()
+    #         self.log_text.setMinimumHeight(60)
+    #         self.log_text.setFontPointSize(10)
+    #         self.log_text.setReadOnly(True)
+    #         self.layout_receive.addWidget(self.log_text)
+    #         # layout for the buttons related with the log
+    #         self.layout_receive_buttons = QHBoxLayout()
+    #         self.layout_receive.addLayout(self.layout_receive_buttons)
+    #         self.button_save_log = QPushButton("Save Log")
+    #         self.button_save_log.clicked.connect(self.save_log)
+    #         self.layout_receive_buttons.addWidget(self.button_save_log)
+    #         # add a separator here
+    #         self.button_clear_log = QPushButton("Clear Log")
+    #         self.button_clear_log.clicked.connect(self.clear_log)
+    #         self.layout_receive_buttons.addWidget(self.button_clear_log)
+    #
+    #
+    # # methods #
+    #
+    # def on_read_data_timer(self):
+    #     logging.debug("on_read_data_timer() method called")
+    # def connect(self):
+    #     pass
+    #
+    #
+    # def on_conn_error(self, e):  # triggered by the serial thread, shows a window saying port is used by sb else.
+    #     pass
+    # def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
+    #     pass
+    #
+    # def on_button_disconnect_click(self):
+    #     pass
+    #
+    # def on_check_echo(self):
+    #     val = self.check_echo.checkState()
+    #     if(val == 0):
+    #         self.echo_flag = False
+    #     else:
+    #         self.echo_flag = True
+    #     logging.debug(self.echo_flag)
+    #
+    # def send(self):  # may I need another thread for this ???
+    #     pass
+    #
+    #     # TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
+    #
+    #
+    # #     # add here action trigger, so it can be catched by main window.
+    # #
+    # # def get_byte_buffer(self):
+    # #     return(self.byte_buffer)
+    # #
+    # # def clear_byte_buffer(self):
+    # #     self.byte_buffer = b''                              # read buffer contains bytes, so initialize to empty bytes
+    #
+    # def add_lines_to_log(self):
+    #     pass
+    #     # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
+    #     logging.debug("add_lines_to_log() method called")
+    #     #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
+    #     #self.parse_bytes(self.readed_bytes)                                     # parse_serial_bytes already handles the modifications over serial_data
+    #     #logging.debug(self.serial_data variable:)
+    #     # self.serial_data = ""                                                   # clearing variable, data is already used
+    #     # for line in self.lines:
+    #     #     if(line != ''):                                                     # do nothing in case of empty string
+    #     #         color = QColor(RECEIVE_TEXT_COLOR)
+    #     #         self.serial_log_text.setTextColor(color)
+    #     #         l = ">> " + str(line)                                            # marking for incoming lines
+    #     #         self.serial_log_text.append(l)
+    #     # self.serial_lines = []                                                  # data is already on text_edit, not needed anymore
+    #
+    # def parse_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
+    #     logging.debug("parse_bytes() method called")
+    #     try:
+    #         char_buffer = self.readed_bytes.decode("utf-8", errors = "ignore")  # convert bytes to characters, so now variables make reference to chars
+    #         self.readed_bytes = b''                                             # clean serial_bytes, or it will keep adding data
+    #         logging.debug("data got into char_buffer")
+    #     except Exception as e:
+    #         logging.debug(SEPARATOR)
+    #         # logging.debug(e)
+    #         self.serial.on_port_error(e)
+    #     else:
+    #         # logging.debug(SEPARATOR)
+    #         # logging.debug("char_buffer variable :")
+    #         # logging.debug(char_buffer)
+    #         # logging.debug(type(char_buffer))                                    # is string, so ok
+    #         # logging.debug(SEPARATOR)
+    #         self.read_data = self.read_data + char_buffer
+    #         logging.debug(SEPARATOR)
+    #         logging.debug("self.read_data variable:")
+    #         logging.debug(self.read_data)
+    #         logging.debug(SEPARATOR)
+    #         endline_str = self.endline.decode("utf-8")
+    #         data_lines = self.read_data.split(endline_str)        # endlines are defined as n
+    #         logging.debug("str(self.serial.endline)")
+    #         logging.debug(str(self.endline))
+    #         self.read_data = data_lines[-1]  # clean the buffer, saving the non completed data_points
+    #
+    #         complete_lines = data_lines[:-1]
+    #
+    #         logging.debug(SEPARATOR)
+    #         logging.debug("complete_lines variable:")
+    #         for data_line in complete_lines:
+    #             logging.debug(data_line)
+    #
+    #         for data_line in complete_lines:  # so all data points except last.
+    #             self.serial_lines.append(data_line)
+    #
+    #
+    #
+    # def save_log(self):
+    #     # popup window to save in user defined location #
+    #     name = QFileDialog.getSaveFileName(self,"Save File")
+    #     #logging.debug("Variable file:")
+    #     #logging.debug(name)
+    #     try:
+    #         file = open(name[0],'w')                        # first parameter contains the name of the selected file.
+    #         file.write(self.log_text.toPlainText())
+    #     except:
+    #         logging.debug("Error saving to file")
+    # def clear_log(self):
+    #     self.log_text.clear()
+    #
 
 class MainWindow(QMainWindow):
     # class variables #
