@@ -119,6 +119,7 @@ class socket_widget(terminal_widget):
         # self.layout_main = QVBoxLayout()
         # self.setLayout(self.layout_main)
 
+        # SPECIFIC ITEMS TO ADD TO LAYOUT_SPECIFIC_CONNECTION #
         # IP label #
         self.label_ip = QLabel("IP:")
         self.layout_specific_connection.addWidget(self.label_ip)

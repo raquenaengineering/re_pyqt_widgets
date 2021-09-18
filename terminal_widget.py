@@ -189,6 +189,27 @@ class terminal_widget(QWidget):
         self.check_echo.clicked.connect(self.on_check_echo)
         self.layout_send.addWidget(self.check_echo)
 
+        # log window layout box #
+        self.layout_log_window = QVBoxLayout()
+        self.layout_main.addLayout(self.layout_log_window)
+        self.log_text = QTextEdit()
+        self.log_text.setMinimumHeight(60)
+        self.log_text.setFontPointSize(10)
+        self.log_text.setReadOnly(True)
+        self.layout_log_window.addWidget(self.log_text)
+
+        # self.serial.new_data.connect(self.get_serial_bytes)
+        # self.serial.new_message_to_send.connect(self.add_log_outgoing_command)
+
+        self.buttons_layout = QHBoxLayout()
+        self.layout_log_window.addLayout(self.buttons_layout)
+        self.button_save_log = QPushButton("Save Log")
+        self.button_save_log.clicked.connect(self.save_log)
+        self.buttons_layout.addWidget(self.button_save_log)
+        # add a separator here
+        self.button_clear_log = QPushButton("Clear Log")
+        self.button_clear_log.clicked.connect(self.clear_log)
+        self.buttons_layout.addWidget(self.button_clear_log)
 
 
     #COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
