@@ -96,6 +96,10 @@ except:
 
 
 SERIAL_TIMER_PERIOD_MS = 500
+RECEIVE_TEXT_COLOR = "red"
+SEND_TEXT_COLOR = "green"
+SEPARATOR = "----------------------------------------------------------"
+
 
 
 class terminal_widget(QWidget):
@@ -111,6 +115,11 @@ class terminal_widget(QWidget):
     log_file_name = "log_file"          # all communication in and out (could be) collected here.
     log_file_type = ".txt"              # file extension
     log_full_path = None                # this variable will be the one used to record
+    read_data_timer_period = 100        # period in ms to read incoming data
+    log_window_refresh_period = 100     # the log windows isn't updated inmediately, but every 100ms
+    readed_bytes = b''                  # when reading data using the timer, it ends up in this variable
+
+    endline = "\n"                      # requred to get the data properly interpreted
 
 
     new_data = pyqtSignal()             # signal triggered when new data is available, to be used by parent widget.
@@ -119,6 +128,20 @@ class terminal_widget(QWidget):
     def __init__(self, log_window = False):
         super().__init__()
         self.log_window_flag = log_window
+
+        # data timer #
+        self.read_data_timer = QTimer()  # we'll use timer instead of thread
+        self.read_data_timer.timeout.connect(self.on_read_data_timer)
+        self.read_data_timer.start(self.read_data_timer_period)  # period needs to be relatively short
+        self.read_data_timer.stop()  # by default the timer will be off, enabled by connect.
+
+        # log print timer #
+        self.print_timer = QTimer()  # we'll use timer instead of thread
+        self.print_timer.timeout.connect(self.add_lines_to_log)
+        self.print_timer.start(self.log_window_refresh_period)  # period needs to be relatively short
+        self.read_data_timer.stop()  # by default the timer will be off, enabled by connect.
+
+
         # size policies #
         #self.setMaximumHeight(100)     # as now the textbox is included in the widget, the policy needs to be different
         self.setContentsMargins(0,0,0,0)
@@ -178,13 +201,10 @@ class terminal_widget(QWidget):
             self.layout_receive_buttons.addWidget(self.button_clear_log)
 
 
-
-
-
     # methods #
 
     def on_read_data_timer(self):
-        pass
+        logging.debug("on_read_data_timer() method called")
     def connect(self):
         pass
 
@@ -211,13 +231,67 @@ class terminal_widget(QWidget):
         # TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
 
 
-        # add here action trigger, so it can be catched by main window.
+    #     # add here action trigger, so it can be catched by main window.
+    #
+    # def get_byte_buffer(self):
+    #     return(self.byte_buffer)
+    #
+    # def clear_byte_buffer(self):
+    #     self.byte_buffer = b''                              # read buffer contains bytes, so initialize to empty bytes
 
-    def get_byte_buffer(self):
-        return(self.byte_buffer)
+    def add_lines_to_log(self):
+        # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
+        #logging.debug("print_serial_data() method called")
+        #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
+        self.parse_bytes(self.readed_bytes)                                     # parse_serial_bytes already handles the modifications over serial_data
+        #logging.debug(self.serial_data variable:)
+        # self.serial_data = ""                                                   # clearing variable, data is already used
+        # for line in self.lines:
+        #     if(line != ''):                                                     # do nothing in case of empty string
+        #         color = QColor(RECEIVE_TEXT_COLOR)
+        #         self.serial_log_text.setTextColor(color)
+        #         l = ">> " + str(line)                                            # marking for incoming lines
+        #         self.serial_log_text.append(l)
+        # self.serial_lines = []                                                  # data is already on text_edit, not needed anymore
 
-    def clear_byte_buffer(self):
-        self.byte_buffer = b''                              # read buffer contains bytes, so initialize to empty bytes
+    def parse_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
+        logging.debug("parse_bytes() method called")
+        try:
+            char_buffer = self.readed_bytes.decode("utf-8", errors = "ignore")  # convert bytes to characters, so now variables make reference to chars
+            self.readed_bytes = b''                                             # clean serial_bytes, or it will keep adding data
+            logging.debug("data got into char_buffer")
+        except Exception as e:
+            logging.debug(SEPARATOR)
+            # logging.debug(e)
+            self.serial.on_port_error(e)
+        else:
+            # logging.debug(SEPARATOR)
+            # logging.debug("char_buffer variable :")
+            # logging.debug(char_buffer)
+            # logging.debug(type(char_buffer))                                    # is string, so ok
+            # logging.debug(SEPARATOR)
+            self.read_data = self.read_data + char_buffer
+            logging.debug(SEPARATOR)
+            logging.debug("self.read_data variable:")
+            logging.debug(self.read_data)
+            logging.debug(SEPARATOR)
+            endline_str = self.endline.decode("utf-8")
+            data_lines = self.read_data.split(endline_str)        # endlines are defined as n
+            logging.debug("str(self.serial.endline)")
+            logging.debug(str(self.endline))
+            self.read_data = data_lines[-1]  # clean the buffer, saving the non completed data_points
+
+            complete_lines = data_lines[:-1]
+
+            logging.debug(SEPARATOR)
+            logging.debug("complete_lines variable:")
+            for data_line in complete_lines:
+                logging.debug(data_line)
+
+            for data_line in complete_lines:  # so all data points except last.
+                self.serial_lines.append(data_line)
+
+
 
     def save_log(self):
         # popup window to save in user defined location #
