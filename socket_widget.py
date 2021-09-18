@@ -87,9 +87,9 @@ LOG_WINDOW_REFRESH_PERIOD_MS = 100                                      # maybe 
 
 #DEFAULT_IP = "172.17.235.151"
 #DEFAULT_IP = "172.17.235.144"
-DEFAULT_IP = "192.168.0.4"
+DEFAULT_IP = "192.168.0.7"
 
-DEFAULT_PORT = 80
+DEFAULT_PORT = 8051
 
 SEPARATOR = "----------------------------------------------------------"
 
@@ -204,7 +204,11 @@ class socket_widget(QWidget):
             )
         else:
             chars = bytes.decode('utf-8')
-            print(chars)
+            #print(chars)
+            file = open("incoming_data.txt",'a', newline = '')
+            logging.debug("saved to file")
+
+            file.write(chars)
 
 
     def on_button_connect_click(self):
@@ -331,8 +335,8 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyle("Fusion")  # required to use it here
     window = MainWindow()
-    window.palette = pyqt_custom_palettes.dark_palette()
-    window.setPalette(window.palette)
+    # window.palette = pyqt_custom_palettes.dark_palette()
+    # window.setPalette(window.palette)
     window.show()
     app.exec_()
 
