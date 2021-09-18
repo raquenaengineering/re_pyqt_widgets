@@ -66,7 +66,7 @@ from PyQt5.QtCore import(
 )
 
 # custom imports #
-from terminal_widget import terminal_widget
+from re_pyqt_widgets.terminal_widget import terminal_widget
 
 # importing the custom palettes from a parent directory, if not found, just ignore palettes #
 try:
@@ -90,7 +90,7 @@ LOG_WINDOW_REFRESH_PERIOD_MS = 100                                      # maybe 
 
 #DEFAULT_IP = "172.17.235.151"
 #DEFAULT_IP = "172.17.235.144"
-DEFAULT_IP = "192.168.0.7"
+DEFAULT_IP = "192.168.0.3"
 
 DEFAULT_PORT = 8051
 
@@ -317,6 +317,45 @@ class socket_widget(terminal_widget):
         else:
             self.echo_flag = True
         logging.debug(self.echo_flag)
+
+
+    # ADDITIONAL TOOLS METHODS #
+    # not to be displayed in the widget, but called by the menus of a main window
+
+    def ping_sweep(self):
+        import pythonping as ping
+        # 1. get my own hostname to know where to scan.
+        my_hostname = socket.gethostname()
+        my_ip = socket.gethostbyname(my_hostname)
+        split_my_ip = my_ip.split('.')
+        rest_ip = split_my_ip[0] + '.' + split_my_ip[1] + '.' + split_my_ip[2] + '.'
+
+        # 2. Ping all devices in a range, to know which ones are available.
+        for i in range(1, 20):              # this should be a selectable range!!! best option take the ping sweep to another window!!!
+            target_ip = rest_ip + str(i)
+            print(my_hostname)
+
+            ping_results = ping.ping(target=target_ip, timeout=0.1)
+            if (ping_results.success()):
+                print("The device with IP " + target_ip + " is available")
+                # 3. Check the name of the device
+                # name = socket.gethostbyaddr(target_ip)
+                # print(name)
+
+            else:
+                print("DEVICE " + target_ip + " UNAVAILABLE")
+
+    def find_cacahuete(self):
+
+        device_name = 'CACAHUETE'
+        print("Looking for " + device_name + " devices")
+        try:
+            ip_address = socket.gethostbyname(device_name)
+        except Exception as e:
+            logging.error(e)
+        else:
+            print(device_name + " Found on address " + ip_address)
+            cacau_dialog = QDialog(device_name + " Found on address " + ip_address)
 
 
 # MAIN WINDOW #################################################################################
