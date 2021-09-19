@@ -139,79 +139,8 @@ class socket_widget(terminal_widget):
         self.textbox_port.setEnabled(True)						        # not enabled until serial port is connected.
         self.layout_specific_connection.addWidget(self.textbox_port)
 
-
-        # # connect button #
-        # self.button_sock_connect = QPushButton("Connect")
-        # self.button_sock_connect.clicked.connect(self.on_button_connect_click)
-        # self.button_sock_connect.setEnabled(True)
-        # self.layout_specific_connection.addWidget(self.button_connect)
-        # # disconnect button #
-        # self.button_sock_disconnect = QPushButton("Disconnect")
-        # self.button_sock_disconnect.clicked.connect(self.on_button_disconnect_click)
-        # self.button_sock_disconnect.setEnabled(False)
-        # self.layout_specific_connection.addWidget(self.button_disconnect)
-
-
-        # self.layout_send = QHBoxLayout()
-        # self.layout_main.addLayout(self.layout_send)
-        # # text box command #
-        # self.textbox_send_command = QLineEdit()
-        # self.textbox_send_command.returnPressed.connect(self.send_sock)	# sends command via serial port
-        # self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
-        # self.layout_send.addWidget(self.textbox_send_command)
-        # # send button #
-        # self.b_send = QPushButton("Send")
-        # self.b_send.clicked.connect(self.send_sock)					# same action as enter in textbox
-        # self.b_send.setEnabled(False)
-        # self.layout_send.addWidget(self.b_send)
-        # # checkbox echo#
-        # self.check_echo = QCheckBox("Echo")
-        # self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
-        # self.check_echo.clicked.connect(self.on_check_echo)
-        # self.layout_send.addWidget(self.check_echo)
-
-    #
-    # def on_read_data_timer(self):
-    #
-    #     # try:
-    #     #     self.socket.send(bytes('?', 'utf-8'))
-    #     # except Error as e:
-    #     #     logging.debug(e)
-    #
-    #
-    #     try:
-    #         bytes = self.socket.recv(1000)                                          # tested with 2000*8 samples on the ESP32 side
-    #     except:
-    #         logging.error("Couldn't read data from remote device")
-    #         logging.error("Is the device still connected?")
-    #         self.on_button_disconnect_click()                                       # maybe should be self.disconnect instead...
-    #         d = QMessageBox.critical(
-    #             self,
-    #             "Remote device Unreachable",
-    #             "Is not possible to reach the remote device, please check its battery status.\n"
-    #             "If this message shows when the remote is working for sure, try to increase the connection timeout",
-    #
-    #             buttons=QMessageBox.Ok
-    #         )
-    #     else:
-    #         chars = bytes.decode('utf-8')
-    #         #print(chars)
-    #         file = open("incoming_data.txt",'a', newline = '')
-    #         logging.debug("saved to file")
-    #
-    #         file.write(chars)
-
-
-
-
     def on_read_data_timer(self):
-
-        # try:
-        #     self.socket.send(bytes('?', 'utf-8'))
-        # except Error as e:
-        #     logging.debug(e)
-
-
+        
         try:
             bytes = self.socket.recv(1000)                                          # tested with 2000*8 samples on the ESP32 side
         except:
