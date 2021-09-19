@@ -175,12 +175,12 @@ class terminal_widget(QWidget):
         self.layout_main.addLayout(self.layout_send)
         # text box command #
         self.textbox_send_command = QLineEdit()
-        self.textbox_send_command.returnPressed.connect(self.send_sock)	# sends command via serial port
+        self.textbox_send_command.returnPressed.connect(self.on_button_send_click)	# sends command via serial port
         self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
         self.layout_send.addWidget(self.textbox_send_command)
         # send button #
         self.b_send = QPushButton("Send")
-        self.b_send.clicked.connect(self.send_sock)					# same action as enter in textbox
+        self.b_send.clicked.connect(self.on_button_send_click)					# same action as enter in textbox
         self.b_send.setEnabled(False)
         self.layout_send.addWidget(self.b_send)
         # checkbox echo#
@@ -239,6 +239,18 @@ class terminal_widget(QWidget):
 
     def on_button_disconnect_click(self):
         pass
+
+    def on_button_send_click(self):
+        pass
+
+
+    def on_check_echo(self):
+        val = self.check_echo.checkState()
+        if(val == 0):
+            self.echo_flag = False
+        else:
+            self.echo_flag = True
+        logging.debug(self.echo_flag)
 
 
 class MainWindow(QMainWindow):

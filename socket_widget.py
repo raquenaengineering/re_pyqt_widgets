@@ -90,7 +90,7 @@ LOG_WINDOW_REFRESH_PERIOD_MS = 100                                      # maybe 
 
 #DEFAULT_IP = "172.17.235.151"
 #DEFAULT_IP = "172.17.235.144"
-DEFAULT_IP = "192.168.0.3"
+DEFAULT_IP = "192.168.0.7"
 
 DEFAULT_PORT = 8051
 
@@ -222,8 +222,8 @@ class socket_widget(terminal_widget):
         pass
 
 
-    def send_sock(self):  # do I need another thread for this ???
-        logging.debug("send_sock() method called")
+    def on_button_send_click(self):  # do I need another thread for this ???
+        logging.debug("on_button_send_click() method called")
         command = self.textbox_send_command.text()  # get what's on the textbox.
         self.textbox_send_command.setText("")
         # here the serial send command #
@@ -238,14 +238,6 @@ class socket_widget(terminal_widget):
 
 
         # add here action trigger, so it can be catched by main window.
-
-    def on_check_echo(self):
-        val = self.check_echo.checkState()
-        if(val == 0):
-            self.echo_flag = False
-        else:
-            self.echo_flag = True
-        logging.debug(self.echo_flag)
 
 
     # ADDITIONAL TOOLS METHODS #
