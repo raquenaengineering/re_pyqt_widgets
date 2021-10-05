@@ -134,7 +134,7 @@ class terminal_widget(QWidget):
 
         # log print timer #
         self.print_timer = QTimer()  # we'll use timer instead of thread
-        self.print_timer.timeout.connect(self.add_lines_to_log)
+        self.print_timer.timeout.connect(self.add_incoming_lines_to_log)
         self.print_timer.start(self.log_window_refresh_period)  # period needs to be relatively short
         self.print_timer.stop()  # by default the timer will be off, enabled by connect.
 
@@ -199,7 +199,7 @@ class terminal_widget(QWidget):
         self.layout_log_window.addWidget(self.log_text)
 
         # self.serial.new_data.connect(self.get_serial_bytes)
-        # self.serial.new_message_to_send.connect(self.add_log_outgoing_command)
+        self.new_message_to_send.connect(self.add_outgoing_lines_to_log)
 
         self.buttons_layout = QHBoxLayout()
         self.layout_log_window.addLayout(self.buttons_layout)
@@ -217,8 +217,20 @@ class terminal_widget(QWidget):
     def on_read_data_timer(self):
         pass
     # COMMON: every time this function is called, all completed lines are added to the log window
-    def add_lines_to_log(self):
+    def add_incoming_lines_to_log(self):
         pass
+    def add_outgoing_lines_to_log(self):
+        logging.debug("add_outgoing_lines_to_log method called")
+        if (self.echo_flag == True):
+            logging.debug("echo flag enabled, echoing message on log window")
+            color = QColor(self.SEND_TEXT_COLOR)
+            self.log_text.setTextColor(color)
+            # l = "<< " + self.serial.serial_message_to_send.decode("utf-8",
+            #                                                       errors="ignore")  # marking for outgoing lines
+            l = "<< " + self.message_to_send.decode("utf-8",
+                                                    errors="ignore")  # marking for outgoing lines
+            #self.serial_log_text.append(l)
+            self.log_text.append(l)
 
     # COMMON: both serial and socket have a button to save the current log #
     def save_log(self):
@@ -234,13 +246,13 @@ class terminal_widget(QWidget):
     def clear_log(self):
         self.log_text.clear()
 
-    def on_button_connect_click(self):
+    def on_button_connect_click(self):                      # SPECIFIC depending on the type of connection
         pass
 
-    def on_button_disconnect_click(self):
+    def on_button_disconnect_click(self):                   # SPECIFIC depending on the type of connection
         pass
 
-    def on_button_send_click(self):
+    def on_button_send_click(self):                         # SPECIFIC depending on the type of connection
         pass
 
 

@@ -103,7 +103,7 @@ class socket_widget(terminal_widget):
     port = None                                                                             # port to connect to
     socket = None                                                                           # socket object used to create the connection
 
-    sock_message_to_send = None
+    #sock_message_to_send = None
 
     echo_flag = False
 
@@ -158,15 +158,24 @@ class socket_widget(terminal_widget):
         else:
             try:
                 chars = bytes.decode('utf-8')
-                #print(chars)
-                file = open("incoming_data.txt",'a', newline = '')
-                logging.debug("saved to file")
-                file.write(chars)
+
             except:
                 logging.warning("There was an error decoding the incoming message")
             else:
-                print(chars)
-
+                # print("Chars:")
+                # print(SEPARATOR)
+                # print(chars)
+                # print(SEPARATOR)
+                # print("Bytes:")
+                # print(SEPARATOR)
+                # print(bytes)
+                # print(SEPARATOR)
+                if(chars[0] != '\0'):                                                   # empty strings won't be saved to file
+                    file = open("incoming_data.txt",'a', newline = '')
+                    logging.debug("saved to file")
+                    file.write(chars)
+                    file.write('\n')
+                    chars = None                                                        # indeed there's no new information/messages.
 
     def on_button_connect_click(self):
         # get the ip and the port from the text fields, to use it to connect the socket #
@@ -189,15 +198,11 @@ class socket_widget(terminal_widget):
         # enabling a timer to read in the incoming data of the socket #
         self.read_data_timer.start()
 
-        print("PENIS")
-
         # UI changes #
         self.button_connect.setEnabled(False)
         self.button_disconnect.setEnabled(True)
         self.textbox_send_command.setEnabled(True)
         self.b_send.setEnabled(True)
-
-
 
     def on_button_disconnect_click(self):
         # critical stuff to stop #
@@ -221,30 +226,29 @@ class socket_widget(terminal_widget):
 
         logging.debug("socket.disconnect finished")
 
-
-
-
     def save_ip(self):
         pass
-
 
     def on_button_send_click(self):  # do I need another thread for this ???
         logging.debug("on_button_send_click() method called")
         command = self.textbox_send_command.text() + self.endline # get what's on the textbox.
         self.textbox_send_command.setText("")
         # here the serial send command #
-        self.sock_message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
-        logging.debug("sock_message_to_send")
-        logging.debug(self.sock_message_to_send)
-        self.socket.send(self.sock_message_to_send)
-        #self.new_message_to_send.emit()                         # emits signal, a new message is sent to slave.
+        self.message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
+        logging.debug("message_to_send")
+        logging.debug(self.message_to_send)
+        self.socket.send(self.message_to_send)
+        self.new_message_to_send.emit()                         # emits signal, a new message is sent to slave.
 
         # TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
 
+        # print("serial_message_to_send")
+        # print(self.serial_message_to_send)
+        # self.serial_port.write(self.serial_message_to_send)
+        # self.new_message_to_send.emit()                         # emits signal, a new message is sent to slave.
+
 
         # add here action trigger, so it can be catched by main window.
-
-
     # ADDITIONAL TOOLS METHODS #
     # not to be displayed in the widget, but called by the menus of a main window
 
