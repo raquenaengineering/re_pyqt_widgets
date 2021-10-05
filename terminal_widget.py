@@ -255,7 +255,6 @@ class terminal_widget(QWidget):
     def on_button_send_click(self):                         # SPECIFIC depending on the type of connection
         pass
 
-
     def on_check_echo(self):
         val = self.check_echo.checkState()
         if(val == 0):
@@ -263,6 +262,58 @@ class terminal_widget(QWidget):
         else:
             self.echo_flag = True
         logging.debug(self.echo_flag)
+
+    def add_log_incoming_lines(self):
+        # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
+        logging.debug("add_log_incoming_lines() method called")
+        #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
+        self.parse_bytes(self.readed_bytes)                              # parse_serial_bytes already handles the modifications over serial_data
+        #logging.debug(self.serial_data variable:)
+        self.serial_data = ""                                                   # clearing variable, data is already used
+        for line in self.serial_lines:
+            if(line != ''):                                                     # do nothing in case of empty string
+                color = QColor(self.RECEIVE_TEXT_COLOR)
+                self.serial_log_text.setTextColor(color)
+                l = ">> " + str(line)                                            # marking for incoming lines
+                self.serial_log_text.append(l)
+        self.serial_lines = []                                                  # data is already on text_edit, not needed anymore
+
+
+    def parse_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
+        logging.debug("parse_bytes() method called")
+        try:
+            char_buffer = self.serial_bytes.decode("utf-8", errors = "ignore")  # convert bytes to characters, so now variables make reference to chars
+            self.serial_bytes = b''                                             # clean serial_bytes, or it will keep adding data
+        except Exception as e:
+            logging.debug(self.SEPARATOR)
+            # logging.debug(e)
+            self.serial.on_port_error(e)                                # this is indeed something else. 
+        else:
+            # logging.debug(SEPARATOR)
+            # logging.debug("char_buffer variable :")
+            # logging.debug(char_buffer)
+            # logging.debug(type(char_buffer))                                    # is string, so ok
+            # logging.debug(SEPARATOR)
+            self.serial_data = self.serial_data + char_buffer
+            logging.debug(SEPARATOR)
+            logging.debug("self.serial_data variable:")
+            logging.debug(self.serial_data)
+            logging.debug(SEPARATOR)
+            endline_str = self.serial.endline.decode("utf-8")
+            data_lines = self.serial_data.split(endline_str)        # endlines are defined as n
+            logging.debug("str(self.serial.endline)")
+            logging.debug(str(self.serial.endline))
+            self.serial_data = data_lines[-1]  # clean the buffer, saving the non completed data_points
+
+            complete_lines = data_lines[:-1]
+
+            logging.debug(SEPARATOR)
+            logging.debug("complete_lines variable:")
+            for data_line in complete_lines:
+                logging.debug(data_line)
+
+            for data_line in complete_lines:  # so all data points except last.
+                self.serial_lines.append(data_line)
 
 
 class MainWindow(QMainWindow):
@@ -279,7 +330,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # self.print_timer = QTimer()  # we'll use timer instead of thread
-        # self.print_timer.timeout.connect(self.add_log_serial_lines)
+        self.print_timer.timeout.connect(self.add_log_incoming_lines)
         # self.print_timer.start(LOG_WINDOW_REFRESH_PERIOD_MS)  # period needs to be relatively short
 
         #self.widget = QWidget()

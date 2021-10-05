@@ -173,9 +173,11 @@ class socket_widget(terminal_widget):
                 if(chars[0] != '\0'):                                                   # empty strings won't be saved to file
                     file = open("incoming_data.txt",'a', newline = '')
                     logging.debug("saved to file")
+                    self.add_log_incoming_lines()
                     file.write(chars)
                     file.write('\n')
                     chars = None                                                        # indeed there's no new information/messages.
+
 
     def on_button_connect_click(self):
         # get the ip and the port from the text fields, to use it to connect the socket #
