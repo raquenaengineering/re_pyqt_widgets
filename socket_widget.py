@@ -90,7 +90,7 @@ LOG_WINDOW_REFRESH_PERIOD_MS = 100                                      # maybe 
 
 #DEFAULT_IP = "172.17.235.151"
 #DEFAULT_IP = "172.17.235.144"
-DEFAULT_IP = "192.168.0.7"
+DEFAULT_IP = "192.168.0.6"
 
 DEFAULT_PORT = 8051
 
@@ -135,18 +135,18 @@ class socket_widget(terminal_widget):
         self.layout_specific_connection.addWidget(self.label_port)
         # port text box #
         self.textbox_port = QLineEdit()
-        self.textbox_port.setText(str(DEFAULT_PORT))                                  # default port, so faster for debugging
-        self.textbox_port.setEnabled(True)						        # not enabled until serial port is connected.
+        self.textbox_port.setText(str(DEFAULT_PORT))                                # default port, so faster for debugging
+        self.textbox_port.setEnabled(True)						                    # not enabled until serial port is connected.
         self.layout_specific_connection.addWidget(self.textbox_port)
 
     def on_read_data_timer(self):
-        
         try:
             bytes = self.socket.recv(1000)                                          # tested with 2000*8 samples on the ESP32 side
         except:
             logging.error("Couldn't read data from remote device")
             logging.error("Is the device still connected?")
             self.on_button_disconnect_click()                                       # maybe should be self.disconnect instead...
+
             d = QMessageBox.critical(
                 self,
                 "Remote device Unreachable",
@@ -156,12 +156,16 @@ class socket_widget(terminal_widget):
                 buttons=QMessageBox.Ok
             )
         else:
-            chars = bytes.decode('utf-8')
-            #print(chars)
-            file = open("incoming_data.txt",'a', newline = '')
-            logging.debug("saved to file")
-
-            file.write(chars)
+            try:
+                chars = bytes.decode('utf-8')
+                #print(chars)
+                file = open("incoming_data.txt",'a', newline = '')
+                logging.debug("saved to file")
+                file.write(chars)
+            except:
+                logging.warning("There was an error decoding the incoming message")
+            else:
+                print(chars)
 
 
     def on_button_connect_click(self):
@@ -208,6 +212,8 @@ class socket_widget(terminal_widget):
         self.button_disconnect.setEnabled(False)
         self.button_connect.setEnabled(True)
         self.textbox_send_command.setEnabled(False)
+        self.textbox_send_command.clear()
+        self.textbox_send_command.clear()
         self.b_send.setEnabled(False)
 
 
@@ -224,11 +230,10 @@ class socket_widget(terminal_widget):
 
     def on_button_send_click(self):  # do I need another thread for this ???
         logging.debug("on_button_send_click() method called")
-        command = self.textbox_send_command.text()  # get what's on the textbox.
+        command = self.textbox_send_command.text() + self.endline # get what's on the textbox.
         self.textbox_send_command.setText("")
         # here the serial send command #
         self.sock_message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
-
         logging.debug("sock_message_to_send")
         logging.debug(self.sock_message_to_send)
         self.socket.send(self.sock_message_to_send)
