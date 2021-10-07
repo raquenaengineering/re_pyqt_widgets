@@ -107,14 +107,13 @@ class socket_widget(terminal_widget):
 
     echo_flag = False
 
-    def __init__(self, log_window = True):
+    def __init__(self, log_window = None):
+
         self.log_window_flag = log_window
+        print("Log_window_flag parameter on socket_widget initialization")
+        print(self.log_window_flag)
 
-        super().__init__()
-
-
-        # self.set
-
+        super().__init__(log_window = self.log_window_flag)                                 # VERY IMPORTANT! Need to add the initialization parameters of the parent here!!!b
 
         # self.layout_main = QVBoxLayout()
         # self.setLayout(self.layout_main)

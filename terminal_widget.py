@@ -94,6 +94,11 @@ except:
     logging.debug("Custom palettes not found, customization ignored")
 #from ..pyqt_common_resources.pyqt_custom_palettes import pyqt_custom_palettes
 
+
+class log_window_widget(QWidget):               # future implementation of the log window will be a different widget.
+    pass
+
+
 class terminal_widget(QWidget):
     # class variables #
 
@@ -123,7 +128,7 @@ class terminal_widget(QWidget):
     new_data = pyqtSignal()             # signal triggered when new data is available, to be used by parent widget.
     new_message_to_send = pyqtSignal()  # a new message is sent to the slave, used by parent to, for example log it.
 
-    def __init__(self, log_window = False):
+    def __init__(self, log_window = None):
         super().__init__()
         self.log_window_flag = log_window
 
@@ -186,36 +191,44 @@ class terminal_widget(QWidget):
         self.layout_send.addWidget(self.b_send)
         # checkbox echo#
         self.check_echo = QCheckBox("Echo")
-        self.check_echo.setChecked(self.echo_flag)                          # whatever the default echo varaible value is
+        self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
         self.check_echo.clicked.connect(self.on_check_echo)
         self.layout_send.addWidget(self.check_echo)
 
-        if(self.log_window_flag == True):                                   # this only works in "compilation" time.
+        # log window layout box #
+        self.layout_log_window = QVBoxLayout()
+        self.layout_main.addLayout(self.layout_log_window)
+        self.log_text = QTextEdit()
+        self.log_text.setMinimumHeight(180)
+        self.log_text.setFontPointSize(10)
+        self.log_text.setReadOnly(True)
+        self.layout_log_window.addWidget(self.log_text)
 
-            # add more space, so we can properly see the log window.
-            self.setMaximumHeight(1000)
-            # log window layout box #
-            self.layout_log_window = QVBoxLayout()
-            self.layout_main.addLayout(self.layout_log_window)
-            self.log_text = QTextEdit()
-            self.log_text.setMinimumHeight(180)
-            self.log_text.setFontPointSize(10)
-            self.log_text.setReadOnly(True)
-            self.layout_log_window.addWidget(self.log_text)
+        # self.serial.new_data.connect(self.get_serial_bytes)
+        self.new_message_to_send.connect(self.add_outgoing_lines_to_log)
 
-            # self.serial.new_data.connect(self.get_serial_bytes)
-            self.new_message_to_send.connect(self.add_outgoing_lines_to_log)
+        self.buttons_layout = QHBoxLayout()
+        self.layout_log_window.addLayout(self.buttons_layout)
+        self.button_save_log = QPushButton("Save Log")
+        self.button_save_log.clicked.connect(self.save_log)
+        self.buttons_layout.addWidget(self.button_save_log)
+        # add a separator here
+        self.button_clear_log = QPushButton("Clear Log")
+        self.button_clear_log.clicked.connect(self.clear_log)
+        self.buttons_layout.addWidget(self.button_clear_log)
 
-            self.buttons_layout = QHBoxLayout()
-            self.layout_log_window.addLayout(self.buttons_layout)
-            self.button_save_log = QPushButton("Save Log")
-            self.button_save_log.clicked.connect(self.save_log)
-            self.buttons_layout.addWidget(self.button_save_log)
-            # add a separator here
-            self.button_clear_log = QPushButton("Clear Log")
-            self.button_clear_log.clicked.connect(self.clear_log)
-            self.buttons_layout.addWidget(self.button_clear_log)
-
+        if(self.log_window_flag == True):                           # this only works in "compilation" time.
+            self.setMaximumHeight(1000)                             # add more space, so we can properly see the log window.
+            self.log_text.setVisible(True)
+            self.button_save_log.setVisible(True)
+            self.button_clear_log.setVisible(True)
+        elif(self.log_window_flag == False):                                                       # this only works in "compilation" time.
+            self.setMaximumHeight(120)                              # add more space, so we can properly see the log window.
+            self.log_text.setVisible(False)
+            self.button_save_log.setVisible(False)
+            self.button_clear_log.setVisible(False)
+        elif(self.log_window_flag == None):
+            logging.warning("SOMETHING IS QUITE FUCKED UP ON LOG_WINDOW_FLEG")
 
     #COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
     # maybe it's interesting to consider doing it via SIGNAL TRIGGER
