@@ -115,6 +115,7 @@ class terminal_widget(QWidget):
     read_data_timer_period = 100        # period in ms to read incoming data
     log_window_refresh_period = 100     # the log windows isn't updated inmediately, but every 100ms
     readed_bytes = b''                  # when reading data using the timer, it ends up in this variable
+    incoming_lines = []                 # contains all incoming data separated by lines, to plot it on the log_window
 
     endline = "\n"                      # requred to get the data properly interpreted
 
@@ -139,7 +140,7 @@ class terminal_widget(QWidget):
         self.print_timer.stop()  # by default the timer will be off, enabled by connect.
 
         # size policies, COMMON#
-        self.setMaximumHeight(180)
+        self.setMaximumHeight(180)              # this is only valid if there's no log window, change this policy if log window enabled.
         self.setContentsMargins(0, 0, 0, 0)
 
         # general top layout #
@@ -185,31 +186,35 @@ class terminal_widget(QWidget):
         self.layout_send.addWidget(self.b_send)
         # checkbox echo#
         self.check_echo = QCheckBox("Echo")
-        self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
+        self.check_echo.setChecked(self.echo_flag)                          # whatever the default echo varaible value is
         self.check_echo.clicked.connect(self.on_check_echo)
         self.layout_send.addWidget(self.check_echo)
 
-        # log window layout box #
-        self.layout_log_window = QVBoxLayout()
-        self.layout_main.addLayout(self.layout_log_window)
-        self.log_text = QTextEdit()
-        self.log_text.setMinimumHeight(60)
-        self.log_text.setFontPointSize(10)
-        self.log_text.setReadOnly(True)
-        self.layout_log_window.addWidget(self.log_text)
+        if(self.log_window_flag == True):                                   # this only works in "compilation" time.
 
-        # self.serial.new_data.connect(self.get_serial_bytes)
-        self.new_message_to_send.connect(self.add_outgoing_lines_to_log)
+            # add more space, so we can properly see the log window.
+            self.setMaximumHeight(1000)
+            # log window layout box #
+            self.layout_log_window = QVBoxLayout()
+            self.layout_main.addLayout(self.layout_log_window)
+            self.log_text = QTextEdit()
+            self.log_text.setMinimumHeight(180)
+            self.log_text.setFontPointSize(10)
+            self.log_text.setReadOnly(True)
+            self.layout_log_window.addWidget(self.log_text)
 
-        self.buttons_layout = QHBoxLayout()
-        self.layout_log_window.addLayout(self.buttons_layout)
-        self.button_save_log = QPushButton("Save Log")
-        self.button_save_log.clicked.connect(self.save_log)
-        self.buttons_layout.addWidget(self.button_save_log)
-        # add a separator here
-        self.button_clear_log = QPushButton("Clear Log")
-        self.button_clear_log.clicked.connect(self.clear_log)
-        self.buttons_layout.addWidget(self.button_clear_log)
+            # self.serial.new_data.connect(self.get_serial_bytes)
+            self.new_message_to_send.connect(self.add_outgoing_lines_to_log)
+
+            self.buttons_layout = QHBoxLayout()
+            self.layout_log_window.addLayout(self.buttons_layout)
+            self.button_save_log = QPushButton("Save Log")
+            self.button_save_log.clicked.connect(self.save_log)
+            self.buttons_layout.addWidget(self.button_save_log)
+            # add a separator here
+            self.button_clear_log = QPushButton("Clear Log")
+            self.button_clear_log.clicked.connect(self.clear_log)
+            self.buttons_layout.addWidget(self.button_clear_log)
 
 
     #COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
@@ -218,7 +223,20 @@ class terminal_widget(QWidget):
         pass
     # COMMON: every time this function is called, all completed lines are added to the log window
     def add_incoming_lines_to_log(self):
-        pass
+        # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
+        logging.debug("add_incoming_lines_to_log() method called")
+        #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
+        self.parse_bytes(self.readed_bytes)                              # parse_serial_bytes already handles the modifications over serial_data
+        #logging.debug(self.serial_data variable:)
+        self.serial_data = ""                                                   # clearing variable, data is already used
+        for line in self.incoming_lines:
+            if(line != ''):                                                     # do nothing in case of empty string
+                color = QColor(self.RECEIVE_TEXT_COLOR)
+                self.serial_log_text.setTextColor(color)
+                l = ">> " + str(line)                                            # marking for incoming lines
+                self.serial_log_text.append(l)
+        self.incoming_lines = []                                                  # data is already on text_edit, not needed anymore
+
     def add_outgoing_lines_to_log(self):
         logging.debug("add_outgoing_lines_to_log method called")
         if (self.echo_flag == True):
@@ -263,22 +281,6 @@ class terminal_widget(QWidget):
             self.echo_flag = True
         logging.debug(self.echo_flag)
 
-    def add_log_incoming_lines(self):
-        # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
-        logging.debug("add_log_incoming_lines() method called")
-        #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
-        self.parse_bytes(self.readed_bytes)                              # parse_serial_bytes already handles the modifications over serial_data
-        #logging.debug(self.serial_data variable:)
-        self.serial_data = ""                                                   # clearing variable, data is already used
-        for line in self.serial_lines:
-            if(line != ''):                                                     # do nothing in case of empty string
-                color = QColor(self.RECEIVE_TEXT_COLOR)
-                self.serial_log_text.setTextColor(color)
-                l = ">> " + str(line)                                            # marking for incoming lines
-                self.serial_log_text.append(l)
-        self.serial_lines = []                                                  # data is already on text_edit, not needed anymore
-
-
     def parse_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
         logging.debug("parse_bytes() method called")
         try:
@@ -287,7 +289,8 @@ class terminal_widget(QWidget):
         except Exception as e:
             logging.debug(self.SEPARATOR)
             # logging.debug(e)
-            self.serial.on_port_error(e)                                # this is indeed something else. 
+
+            #self.serial.on_port_error(e)                                # this is indeed something else.
         else:
             # logging.debug(SEPARATOR)
             # logging.debug("char_buffer variable :")
@@ -313,14 +316,14 @@ class terminal_widget(QWidget):
                 logging.debug(data_line)
 
             for data_line in complete_lines:  # so all data points except last.
-                self.serial_lines.append(data_line)
+                self.incoming_lines.append(data_line)
 
 
 class MainWindow(QMainWindow):
     # class variables #
     serial_bytes = b''                          # here we store what we get from serial port (get_byte_buffer)
     serial_data = ""                            # here the processed message(s) after parsing are stored
-    serial_lines = []                           # the serial data could contain several lines, this variable holds them.
+    #serial_lines = []                           # the serial data could contain several lines, this variable holds them.
     font_size = 10
 
 
@@ -330,7 +333,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # self.print_timer = QTimer()  # we'll use timer instead of thread
-        self.print_timer.timeout.connect(self.add_log_incoming_lines)
+        self.print_timer.timeout.connect(self.add_incoming_lines_to_log)
         # self.print_timer.start(LOG_WINDOW_REFRESH_PERIOD_MS)  # period needs to be relatively short
 
         #self.widget = QWidget()

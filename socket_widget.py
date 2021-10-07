@@ -107,7 +107,7 @@ class socket_widget(terminal_widget):
 
     echo_flag = False
 
-    def __init__(self, log_window = False):
+    def __init__(self, log_window = True):
         self.log_window_flag = log_window
 
         super().__init__()
@@ -173,7 +173,7 @@ class socket_widget(terminal_widget):
                 if(chars[0] != '\0'):                                                   # empty strings won't be saved to file
                     file = open("incoming_data.txt",'a', newline = '')
                     logging.debug("saved to file")
-                    self.add_log_incoming_lines()
+                    self.add_incoming_lines_to_log()
                     file.write(chars)
                     file.write('\n')
                     chars = None                                                        # indeed there's no new information/messages.
@@ -294,7 +294,6 @@ class socket_widget(terminal_widget):
 
 class MainWindow(QMainWindow):
     # class variables #
-    serial_bytes = b''                          # here we store what we get from serial port (get_byte_buffer)
     serial_data = ""                            # here the processed message(s) after parsing are stored
     serial_lines = []                           # the serial data could contain several lines, this variable holds them.
     font_size = 10
