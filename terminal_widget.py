@@ -218,15 +218,9 @@ class terminal_widget(QWidget):
         self.buttons_layout.addWidget(self.button_clear_log)
 
         if(self.log_window_flag == True):                           # this only works in "compilation" time.
-            self.setMaximumHeight(1000)                             # add more space, so we can properly see the log window.
-            self.log_text.setVisible(True)
-            self.button_save_log.setVisible(True)
-            self.button_clear_log.setVisible(True)
+            self.enable_log_window()
         elif(self.log_window_flag == False):                                                       # this only works in "compilation" time.
-            self.setMaximumHeight(120)                              # add more space, so we can properly see the log window.
-            self.log_text.setVisible(False)
-            self.button_save_log.setVisible(False)
-            self.button_clear_log.setVisible(False)
+            self.disable_log_window()
         elif(self.log_window_flag == None):
             logging.warning("SOMETHING IS QUITE FUCKED UP ON LOG_WINDOW_FLEG")
 
@@ -235,6 +229,20 @@ class terminal_widget(QWidget):
     def on_read_data_timer(self):
         pass
     # COMMON: every time this function is called, all completed lines are added to the log window
+
+
+    def enable_log_window(self):
+        self.setFixedHeight(400)  # add more space, so we can properly see the log window.
+        self.log_text.setVisible(True)
+        self.button_save_log.setVisible(True)
+        self.button_clear_log.setVisible(True)
+    def disable_log_window(self):
+        self.setMaximumHeight(120)  # add more space, so we can properly see the log window.
+        self.setFixedHeight(80)
+        self.log_text.setVisible(False)
+        self.button_save_log.setVisible(False)
+        self.button_clear_log.setVisible(False)
+
     def add_incoming_lines_to_log(self):
         # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
         logging.debug("add_incoming_lines_to_log() method called")
