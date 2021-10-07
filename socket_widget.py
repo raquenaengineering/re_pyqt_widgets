@@ -140,7 +140,7 @@ class socket_widget(terminal_widget):
 
     def on_read_data_timer(self):
         try:
-            bytes = self.socket.recv(1000)                                          # tested with 2000*8 samples on the ESP32 side
+            self.readed_bytes = self.socket.recv(1000)                                          # tested with 2000*8 samples on the ESP32 side
         except:
             logging.error("Couldn't read data from remote device")
             logging.error("Is the device still connected?")
@@ -156,24 +156,24 @@ class socket_widget(terminal_widget):
             )
         else:
             try:
-                chars = bytes.decode('utf-8')
+                self.incoming_data = self.readed_bytes.decode('utf-8')
 
             except:
                 logging.warning("There was an error decoding the incoming message")
             else:
-                # print("Chars:")
-                # print(SEPARATOR)
-                # print(chars)
-                # print(SEPARATOR)
-                # print("Bytes:")
-                # print(SEPARATOR)
-                # print(bytes)
-                # print(SEPARATOR)
-                if(chars[0] != '\0'):                                                   # empty strings won't be saved to file
-                    file = open("incoming_data.txt",'a', newline = '')
+                # logging.debug("Chars:")
+                # logging.debug(SEPARATOR)
+                # logging.debug(self.incoming_data)
+                # logging.debug(SEPARATOR)
+                # logging.debug("Bytes:")
+                # logging.debug(SEPARATOR)
+                # logging.debug(self.readed_bytes)
+                # logging.debug(SEPARATOR)
+                if(self.incoming_data[0] != '\0'):                                                   # empty strings won't be saved to file
+                    self.add_incoming_lines_to_log()                                    # print to log window (atm not working)
+                    file = open("incoming_data.txt",'a', newline = '')                  # saving data to file.
                     logging.debug("saved to file")
-                    self.add_incoming_lines_to_log()
-                    file.write(chars)
+                    file.write(self.incoming_data)
                     file.write('\n')
                     chars = None                                                        # indeed there's no new information/messages.
 

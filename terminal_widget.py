@@ -30,7 +30,7 @@ import csv
 import numpy as np 									# required to handle multidimensional arrays/matrices
 
 import logging
-logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+logging.basicConfig(level=logging.WARNING)			# enable debug messages
 
 
 #logging.basicConfig(level = logging.WARNING)
@@ -120,9 +120,11 @@ class terminal_widget(QWidget):
     read_data_timer_period = 100        # period in ms to read incoming data
     log_window_refresh_period = 100     # the log windows isn't updated inmediately, but every 100ms
     readed_bytes = b''                  # when reading data using the timer, it ends up in this variable
+    incoming_data = ""                  # characters converted from readed_bytes, to be converted in
     incoming_lines = []                 # contains all incoming data separated by lines, to plot it on the log_window
 
     endline = "\n"                      # requred to get the data properly interpreted
+    # endline = b'\n'                   # probably this is a better option, but it will require some changes, fix !!!
 
 
     new_data = pyqtSignal()             # signal triggered when new data is available, to be used by parent widget.
@@ -246,17 +248,18 @@ class terminal_widget(QWidget):
     def add_incoming_lines_to_log(self):
         # NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
         logging.debug("add_incoming_lines_to_log() method called")
-        #self.serial_data = self.parse_serial_bytes(self.serial_bytes)          # doing so, will smash the previously stored data, so don't!!!
-        self.parse_bytes(self.readed_bytes)                              # parse_serial_bytes already handles the modifications over serial_data
-        #logging.debug(self.serial_data variable:)
-        self.serial_data = ""                                                   # clearing variable, data is already used
+
+        self.parse_bytes(self.readed_bytes)                                     # parse_serial_bytes already handles the modifications over serial_data
+        logging.debug("self.readed_bytes variable:")
+        logging.debug(self.readed_bytes)
+        self.incoming_data = ""                                                   # clearing variable, data is already used
         for line in self.incoming_lines:
             if(line != ''):                                                     # do nothing in case of empty string
                 color = QColor(self.RECEIVE_TEXT_COLOR)
-                self.serial_log_text.setTextColor(color)
+                self.log_text.setTextColor(color)
                 l = ">> " + str(line)                                            # marking for incoming lines
-                self.serial_log_text.append(l)
-        self.incoming_lines = []                                                  # data is already on text_edit, not needed anymore
+                self.log_text.append(l)
+        self.incoming_lines = []                                                # data is already on text_edit, not needed anymore
 
     def add_outgoing_lines_to_log(self):
         logging.debug("add_outgoing_lines_to_log method called")
@@ -305,11 +308,11 @@ class terminal_widget(QWidget):
     def parse_bytes(self,bytes):                                         # maybe include this method onto the serial widget, and add different parsing methods.
         logging.debug("parse_bytes() method called")
         try:
-            char_buffer = self.serial_bytes.decode("utf-8", errors = "ignore")  # convert bytes to characters, so now variables make reference to chars
-            self.serial_bytes = b''                                             # clean serial_bytes, or it will keep adding data
+            char_buffer = self.readed_bytes.decode("utf-8", errors = "ignore")  # convert bytes to characters, so now variables make reference to chars
+            self.readed_bytes = b''                                             # clean serial_bytes, or it will keep adding data
         except Exception as e:
             logging.debug(self.SEPARATOR)
-            # logging.debug(e)
+            logging.debug(e)
 
             #self.serial.on_port_error(e)                                # this is indeed something else.
         else:
@@ -318,20 +321,21 @@ class terminal_widget(QWidget):
             # logging.debug(char_buffer)
             # logging.debug(type(char_buffer))                                    # is string, so ok
             # logging.debug(SEPARATOR)
-            self.serial_data = self.serial_data + char_buffer
-            logging.debug(SEPARATOR)
+            self.serial_data = self.incoming_data + char_buffer
+            logging.debug(self.SEPARATOR)
             logging.debug("self.serial_data variable:")
-            logging.debug(self.serial_data)
-            logging.debug(SEPARATOR)
-            endline_str = self.serial.endline.decode("utf-8")
+            logging.debug(self.incoming_data)
+            logging.debug(self.SEPARATOR)
+            #endline_str = self.endline.decode("utf-8")
+            endline_str = self.endline
             data_lines = self.serial_data.split(endline_str)        # endlines are defined as n
-            logging.debug("str(self.serial.endline)")
-            logging.debug(str(self.serial.endline))
-            self.serial_data = data_lines[-1]  # clean the buffer, saving the non completed data_points
+            logging.debug("str(self.endline)")
+            logging.debug(str(self.endline))
+            self.incoming_data = data_lines[-1]                     # clean the buffer, saving the non completed data_points
 
             complete_lines = data_lines[:-1]
 
-            logging.debug(SEPARATOR)
+            logging.debug(self.SEPARATOR)
             logging.debug("complete_lines variable:")
             for data_line in complete_lines:
                 logging.debug(data_line)
