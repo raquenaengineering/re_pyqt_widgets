@@ -106,9 +106,13 @@ class terminal_widget(QWidget):
     SEND_TEXT_COLOR = "green"
     SEPARATOR = "----------------------------------------------------------"
 
+    LOG_WINDOW_REFRESH_PERIOD_MS = 100  # maybe better to move to an event based system.
+    MAX_TEXT_SIZE = 30
+    MIN_TEXT_SIZE = 5
+
     connected = False
     message_to_send = None              # if not none, is a message to be sent via serial port
-    echo_flag = False
+    echo_flag = False                   # to enable/disable echoing sent messages to the log window
     timeouts = 0
     byte_buffer = b''                   # all chars read from serial come here, should it go somewhere else?
     recording = False                   # flag to start/stop recording.
@@ -267,11 +271,10 @@ class terminal_widget(QWidget):
             logging.debug("echo flag enabled, echoing message on log window")
             color = QColor(self.SEND_TEXT_COLOR)
             self.log_text.setTextColor(color)
-            # l = "<< " + self.serial.serial_message_to_send.decode("utf-8",
-            #                                                       errors="ignore")  # marking for outgoing lines
+            logging.debug("self.message_to_send")
+            logging.debug(self.message_to_send)
             l = "<< " + self.message_to_send.decode("utf-8",
                                                     errors="ignore")  # marking for outgoing lines
-            #self.serial_log_text.append(l)
             self.log_text.append(l)
 
     # COMMON: both serial and socket have a button to save the current log #
