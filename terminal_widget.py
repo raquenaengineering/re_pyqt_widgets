@@ -135,7 +135,9 @@ class terminal_widget(QWidget):
     new_message_to_send = pyqtSignal()  # a new message is sent to the slave, used by parent to, for example log it.
 
     def __init__(self, log_window = None):
+
         super().__init__()
+
         self.log_window_flag = log_window
 
         # data timer #
@@ -153,6 +155,7 @@ class terminal_widget(QWidget):
         # size policies, COMMON#
         self.setMaximumHeight(180)              # this is only valid if there's no log window, change this policy if log window enabled.
         self.setContentsMargins(0, 0, 0, 0)
+
 
         # general top layout #
         self.layout_main = QVBoxLayout()
@@ -381,7 +384,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyle("Fusion")  # required to use it here
     window = MainWindow()
-    window.palette = pyqt_custom_palettes.dark_palette()
-    window.setPalette(window.palette)
     window.show()
     app.exec_()

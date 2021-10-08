@@ -15,7 +15,7 @@ import numpy as np 									# required to handle multidimensional arrays/matrice
 import socket
 
 import logging
-logging.basicConfig(level=logging.DEBUG)			# enable debug messages
+logging.basicConfig(level=logging.WARNING)			# enable debug messages
 
 #logging.basicConfig(level = logging.WARNING)
 
@@ -608,8 +608,6 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyle("Fusion")  # required to use it here
     window = MainWindow()
-    # window.palette = pyqt_custom_palettes.dark_palette()
-    # window.setPalette(window.palette)
     window.show()
     app.exec_()
 
