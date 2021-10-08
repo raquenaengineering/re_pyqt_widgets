@@ -180,24 +180,45 @@ class serial_widget(terminal_widget):
 		self.layout_specific_connection.addWidget(self.combo_endline_params)
 
 	def on_read_data_timer(self):
-		# logging.debug("On_serial_timer")
-		readed_bytes = b''
-		# logging.debug("Byte Buffer:")
-		# logging.debug(byte_buffer)
-		# logging.debug("(type(byte_buffer))")
-		# logging.debug(type(byte_buffer))
-		# logging.debug(type(self.read_buffer))
+		logging.debug("on_read_data_timer()")
 		try:
-			readed_bytes = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
+			self.readed_bytes = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
 		except Exception as e:
 			self.on_port_error(e)
 			self.on_button_disconnect_click()  # we've crashed the serial, so disconnect and REFRESH PORTS!!!
+		else:
+			logging.debug("Chars:")
+			logging.debug(self.SEPARATOR)
+			logging.debug(self.incoming_data)
+			logging.debug(self.SEPARATOR)
+			logging.debug("Bytes:")
+			logging.debug(self.SEPARATOR)
+			logging.debug(self.readed_bytes)
+			logging.debug(self.SEPARATOR)
+			#if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
+			if(True):
+				self.add_incoming_lines_to_log()  # print to log window (atm not working)
+				file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
+				logging.debug("saved to file")
+				file.write(self.incoming_data)
+				file.write('\n')
+				chars = None  # indeed there's no new information/messages.
 
-		# logging.debug(byte_buffer)
-		# after collecting some data on the byte buffer, store it in a static variable, and
-		# emit a signal, so another window can subscribe to it, and handle the data when needed.
-		self.new_data.emit()
-		self.byte_buffer = self.byte_buffer + readed_bytes  # only reading the bytes, but NO PARSING
+				# logging.debug(byte_buffer)
+				# after collecting some data on the byte buffer, store it in a static variable, and
+				# emit a signal, so another window can subscribe to it, and handle the data when needed.
+				self.new_data.emit()
+				self.byte_buffer = self.byte_buffer + self.readed_bytes  # only reading the bytes, but NO PARSING
+
+		logging.debug("self.readed_bytes")
+		logging.debug(self.readed_bytes)
+		logging.debug("self.byte_buffer")
+		logging.debug(self.byte_buffer)
+
+
+
+
+
 
 	def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
 		logging.debug("Connect Button Clicked")  # how to determine a connection was succesful ???
