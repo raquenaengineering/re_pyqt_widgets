@@ -114,7 +114,8 @@ class terminal_widget(QWidget):
     message_to_send = None              # if not none, is a message to be sent via serial port
     echo_flag = False                   # to enable/disable echoing sent messages to the log window
     timeouts = 0
-    byte_buffer = b''                   # all chars read from serial come here, should it go somewhere else?
+    byte_buffer = b''                   # buffer where the received bytes are stored until used.
+    readed_bytes = b''                  # bytes received in the last read
     recording = False                   # flag to start/stop recording.
     log_window_flag = None              # when True, shows the reception log window, clear and save buttons, if not, means the data will be handled in a different way.
     log_folder = "logs"                 # in the beginning, log folder, path and filename are fixed
@@ -123,12 +124,11 @@ class terminal_widget(QWidget):
     log_full_path = None                # this variable will be the one used to record
     read_data_timer_period = 100        # period in ms to read incoming data
     log_window_refresh_period = 100     # the log windows isn't updated inmediately, but every 100ms
-    readed_bytes = b''                  # when reading data using the timer, it ends up in this variable
     incoming_data = ""                  # characters converted from readed_bytes, to be converted in
     incoming_lines = []                 # contains all incoming data separated by lines, to plot it on the log_window
 
-    endline = "\n"                      # requred to get the data properly interpreted
-    # endline = b'\n'                   # probably this is a better option, but it will require some changes, fix !!!
+    #endline = "\n"                      # requred to get the data properly interpreted
+    endline = b'\n'                   # probably this is a better option, but it will require some changes, fix !!!
 
 
     new_data = pyqtSignal()             # signal triggered when new data is available, to be used by parent widget.
@@ -329,8 +329,8 @@ class terminal_widget(QWidget):
             logging.debug("self.serial_data variable:")
             logging.debug(self.incoming_data)
             logging.debug(self.SEPARATOR)
-            #endline_str = self.endline.decode("utf-8")
-            endline_str = self.endline
+            endline_str = self.endline.decode("utf-8")              # this needs to be unified between socket and serial.
+            #endline_str = self.endline
             data_lines = self.serial_data.split(endline_str)        # endlines are defined as n
             logging.debug("str(self.endline)")
             logging.debug(str(self.endline))

@@ -169,7 +169,7 @@ class socket_widget(terminal_widget):
                 # logging.debug(SEPARATOR)
                 # logging.debug(self.readed_bytes)
                 # logging.debug(SEPARATOR)
-                if(self.incoming_data[0] != '\0'):                                                   # empty strings won't be saved to file
+                if(self.incoming_data[0] != '\0'):                                      # empty strings won't be saved to file
                     self.add_incoming_lines_to_log()                                    # print to log window (atm not working)
                     file = open("incoming_data.txt",'a', newline = '')                  # saving data to file.
                     logging.debug("saved to file")
@@ -232,10 +232,10 @@ class socket_widget(terminal_widget):
 
     def on_button_send_click(self):  # do I need another thread for this ???
         logging.debug("on_button_send_click() method called")
-        command = self.textbox_send_command.text() + self.endline # get what's on the textbox.
+        command = self.textbox_send_command.text()# get what's on the textbox.
         self.textbox_send_command.setText("")
         # here the serial send command #
-        self.message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
+        self.message_to_send = command.encode("utf-8")  + self.endline # this should have effect on the serial_thread
         logging.debug("message_to_send")
         logging.debug(self.message_to_send)
         self.socket.send(self.message_to_send)

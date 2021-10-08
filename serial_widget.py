@@ -265,7 +265,11 @@ class serial_widget(terminal_widget):
 		self.textbox_send_command.setText("")
 		# here the serial send command #
 
-		self.message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
+		self.message_to_send = command.encode("utf-8")  							# this should have effect on the serial_thread
+		print("type of message_to_send")
+		print(type(self.message_to_send))
+		print("type of endline")
+		print(type(self.endline))
 		self.message_to_send = self.message_to_send + self.endline
 
 		print("serial_message_to_send")
