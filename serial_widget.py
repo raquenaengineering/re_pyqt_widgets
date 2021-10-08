@@ -83,6 +83,10 @@ except:
 
 
 class serial_widget(terminal_widget):
+
+	# class constants #
+	SERIAL_BUFFER_SIZE = 2000  # buffer size to store the incoming data from serial, to afterwards process it.
+
 	# class variables #
 	serial_ports = list  # list of serial ports detected
 	serial_port = None  # serial port used for the communication
@@ -176,7 +180,24 @@ class serial_widget(terminal_widget):
 		self.layout_specific_connection.addWidget(self.combo_endline_params)
 
 	def on_read_data_timer(self):
-		pass
+		# logging.debug("On_serial_timer")
+		readed_bytes = b''
+		# logging.debug("Byte Buffer:")
+		# logging.debug(byte_buffer)
+		# logging.debug("(type(byte_buffer))")
+		# logging.debug(type(byte_buffer))
+		# logging.debug(type(self.read_buffer))
+		try:
+			readed_bytes = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
+		except Exception as e:
+			self.on_port_error(e)
+			self.on_button_disconnect_click()  # we've crashed the serial, so disconnect and REFRESH PORTS!!!
+
+		# logging.debug(byte_buffer)
+		# after collecting some data on the byte buffer, store it in a static variable, and
+		# emit a signal, so another window can subscribe to it, and handle the data when needed.
+		self.new_data.emit()
+		self.byte_buffer = self.byte_buffer + readed_bytes  # only reading the bytes, but NO PARSING
 
 	def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
 		logging.debug("Connect Button Clicked")  # how to determine a connection was succesful ???
@@ -197,7 +218,23 @@ class serial_widget(terminal_widget):
 		self.textbox_send_command.setEnabled(True)
 		self.b_send.setEnabled(True)
 	def on_button_disconnect_click(self):
-		pass
+		logging.debug("on_button_disconnect_click() method called")
+		self.button_disconnect.setEnabled(False)  # toggle the enable of the connect/disconnect buttons
+		self.button_connect.setEnabled(True)
+		self.button_update_ports.setEnabled(True)
+		self.combo_serial_port.setEnabled(True)
+		self.combo_serial_speed.setEnabled(True)
+		self.combo_endline_params.setEnabled(True)
+		self.textbox_send_command.setEnabled(False)
+		self.byte_buffer = b''  # clear byte buffer
+		self.serial_connected = False
+		# self.status_bar.showMessage("Disconnected")    # showing sth is happening.
+		try:
+			self.serial_port.close()
+		except:
+			logging.warning("Tried  to close serial port, but was already closed")
+		self.read_data_timer.stop()
+		logging.debug(self.SEPARATOR)
 	def on_button_send_click(self):  # do I need another thread for this ???
 		self.send_serial()
 	def send_serial(self):  # do I need another thread for this ???
@@ -207,12 +244,12 @@ class serial_widget(terminal_widget):
 		self.textbox_send_command.setText("")
 		# here the serial send command #
 
-		self.serial_message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
-		self.serial_message_to_send = self.serial_message_to_send + self.endline
+		self.message_to_send = command.encode("utf-8")  # this should have effect on the serial_thread
+		self.message_to_send = self.message_to_send + self.endline
 
 		print("serial_message_to_send")
-		print(self.serial_message_to_send)
-		self.serial_port.write(self.serial_message_to_send)
+		print(self.message_to_send)
+		self.serial_port.write(self.message_to_send)
 		self.new_message_to_send.emit()  # emits signal, a new message is sent to slave.
 
 		# TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
@@ -404,8 +441,102 @@ class serial_widget(terminal_widget):
 		except:
 			logging.debug("No serial port object was created")
 		logging.debug("done: ")
+	def on_port_error(self, e):  # triggered by the serial thread, shows a window saying port is used by sb else.
 
+		desc = str(e)
+		logging.debug(type(e))
+		logging.debug(desc)
+		error_type = None
+		i = desc.find("Port is already open.")
+		if (i != -1):
+			logging.debug("PORT ALREADY OPEN BY THIS APPLICATION")
+			error_type = 1
+			logging.debug(i)
+		i = desc.find("FileNotFoundError")
+		if (i != -1):
+			logging.debug("DEVICE IS NOT CONNECTED, EVEN THOUGH PORT IS LISTED")
+			error_type = 2  #
+		i = desc.find("PermissionError")
+		if (i != -1):
+			logging.debug("SOMEONE ELSE HAS OPEN THE PORT")
+			error_type = 3  # shows dialog the por is used (better mw or thread?) --> MW, IT'S GUI.
 
+		i = desc.find("OSError")
+		if (i != -1):
+			logging.debug("BLUETOOTH DEVICE NOT REACHABLE ?")
+			error_type = 4
+
+		i = desc.find("ClearCommError")
+		if (i != -1):
+			logging.debug("DEVICE CABLE UNGRACEFULLY DISCONNECTED")
+			error_type = 5
+
+		# ~ i = desc.find("'utf-8' codec can't decode byte")			# NOT WORKING !!! (GIVING MORE ISSUES THAN IT SOLVED)
+		# ~ if(i != -1):
+		# ~ logging.debug("WRONG SERIAL BAUDRATE?")
+		# ~ error_type = 6
+
+		self.error_type = error_type
+
+		# ~ logging.debug("Error on serial port opening detected: ")
+		# ~ logging.debug(self.error_type)
+		self.handle_errors_flag = True  # more global variables to fuck things up even more.
+		self.handle_port_errors()
+	def handle_port_errors(self):  # made a trick, port_errors is a class variable (yup, dirty as fuck !!!)
+
+		if (self.error_type == 1):  # this means already open, should never happen.
+			logging.warning("ERROR TYPE 1")
+			d = QMessageBox.critical(
+				self,
+				"Serial port Blocked",
+				"The serial port selected is in use by other application",
+				buttons=QMessageBox.Ok
+			)
+		if (self.error_type == 2):  # this means device not connected
+			logging.warning("ERROR TYPE 2")
+			d = QMessageBox.critical(
+				self,
+				"Serial Device is not connected",
+				"Device not connected.\n Please check your cables/connections.  ",
+				buttons=QMessageBox.Ok
+			)
+		if (self.error_type == 3):  # this means locked by sb else.
+			d = QMessageBox.critical(
+				self,
+				"Serial port Blocked",
+				"The serial port selected is in use by other application.  ",
+				buttons=QMessageBox.Ok
+			)
+
+			self.on_button_disconnect_click()  # resetting to the default "waiting for connect" situation
+			self.handle_errors_flag = False
+		if (self.error_type == 4):  # this means device not connected
+			logging.warning("ERROR TYPE 4")
+			d = QMessageBox.critical(
+				self,
+				"Serial Device Unreachable",
+				"Serial device couldn't be reached,\n Bluetooth device too far? ",
+				buttons=QMessageBox.Ok
+			)
+		if (self.error_type == 5):  # this means device not connected
+			logging.warning("ERROR TYPE 5")
+			d = QMessageBox.critical(
+				self,
+				"Serial Cable disconnected while transmitting",
+				"Serial device was ungracefully disconnected, please check the cables",
+				buttons=QMessageBox.Ok
+			)
+		if (self.error_type == 6):  # this means device not connected
+			logging.warning("ERROR TYPE 6")
+			d = QMessageBox.critical(
+				self,
+				"Serial wrong decoding",
+				"There are problems decoding the data\n probably due to a wrong baudrate.",
+				buttons=QMessageBox.Ok
+			)
+		self.on_button_disconnect_click()  # resetting to the default "waiting for connect" situation
+		self.handle_errors_flag = False
+		self.error_type = None  # cleaning unhnandled errors flags.
 
 
 # 4. Initialization stuff required by the remote serial device:
