@@ -144,6 +144,7 @@ class serial_widget(terminal_widget):
 		# Button Update serial ports #
 		self.button_update_ports = QPushButton("Update")
 		self.layout_specific_connection.addWidget(self.button_update_ports)
+		self.button_update_ports.clicked.connect(self.update_serial_ports)
 		# port label #
 		self.label_port = QLabel("Port:")
 		self.layout_specific_connection.addWidget(self.label_port)
@@ -323,6 +324,7 @@ class serial_widget(terminal_widget):
 		# here we need to add an entry for each serial port avaiable at the computer
 		# 1. How to get the list of available serial ports ?
 		# self.serial_port_menu.clear()  # not existing in a monolythic widget.
+		logging.debug("self.update_serial_ports() method called")
 		self.combo_serial_port.clear()
 		self.get_serial_ports()  # meeded to list the serial ports at the menu
 		# 3. How to ensure which serial ports are available ? (grey out the unusable ones)
