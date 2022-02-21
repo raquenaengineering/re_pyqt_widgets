@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (
 	QToolBar,
 	QStatusBar,
 	QDialog,
-    QFileDialog,
+	QFileDialog,
 	QMessageBox,														# Dialog with extended functionality.
 	QShortcut,
 	QCheckBox,
@@ -50,8 +50,8 @@ from PyQt5 import *
 from PyQt5.QtGui import (
 	QIcon,
 	QKeySequence,
-    QColor,
-    QFont
+	QColor,
+	QFont
 )
 
 from PyQt5.QtCore import(
@@ -70,15 +70,15 @@ from re_pyqt_widgets.terminal_widget import terminal_widget
 
 # importing the custom palettes from a parent directory, if not found, just ignore palettes #
 try:
-    import os, sys
-    currentdir = os.path.dirname(os.path.realpath(__file__))
-    parentdir = os.path.dirname(currentdir)
-    sys.path.append(parentdir)
+	import os, sys
+	currentdir = os.path.dirname(os.path.realpath(__file__))
+	parentdir = os.path.dirname(currentdir)
+	sys.path.append(parentdir)
 
-    import pyqt_common_resources.pyqt_custom_palettes as pyqt_custom_palettes
+	import pyqt_common_resources.pyqt_custom_palettes as pyqt_custom_palettes
 
 except:
-    logging.debug("Custom palettes not found, customization ignored")
+	logging.debug("Custom palettes not found, customization ignored")
 #from ..pyqt_common_resources.pyqt_custom_palettes import pyqt_custom_palettes
 
 
@@ -137,8 +137,7 @@ class serial_widget(terminal_widget):
 		print("Log_window_flag parameter on socket_widget initialization")
 		print(self.log_window_flag)
 
-		super().__init__(
-			log_window=self.log_window_flag)  # VERY IMPORTANT! Need to add the initialization parameters of the parent here!!!b
+		super().__init__(log_window=self.log_window_flag)  # VERY IMPORTANT! Need to add the initialization parameters of the parent here!!!b
 
 		# SPECIFIC ITEMS TO ADD TO LAYOUT_SPECIFIC_CONNECTION #
 		# Button Update serial ports #
@@ -278,9 +277,9 @@ class serial_widget(terminal_widget):
 		self.serial_port.write(self.message_to_send)
 		self.new_message_to_send.emit()  # emits signal, a new message is sent to slave.
 
-		# TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
+	# TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
 
-		# add here action trigger, so it can be catched by main window.
+	# add here action trigger, so it can be catched by main window.
 
 
 
@@ -382,7 +381,7 @@ class serial_widget(terminal_widget):
 			port_desc = port[1]
 
 			if (port_desc.find(
-					"Bluetooth") != -1):  # Bluetooth found on description,so is a BT port (good or bad, dunno yet)
+				"Bluetooth") != -1):  # Bluetooth found on description,so is a BT port (good or bad, dunno yet)
 
 				# Using the description as the bt serial ports to find out the "good" bluetooth port.
 				port_btenum = port[2]
@@ -572,44 +571,44 @@ class serial_widget(terminal_widget):
 # MAIN WINDOW ##########################################################################################################
 
 class MainWindow(QMainWindow):
-    # class variables #
-    serial_data = ""                            # here the processed message(s) after parsing are stored
-    serial_lines = []                           # the serial data could contain several lines, this variable holds them.
-    font_size = 10
+	# class variables #
+	serial_data = ""                            # here the processed message(s) after parsing are stored
+	serial_lines = []                           # the serial data could contain several lines, this variable holds them.
+	font_size = 10
 
 
-    # constructor #
-    def __init__(self):
+	# constructor #
+	def __init__(self):
 
-        super().__init__()
+		super().__init__()
 
-        # self.print_timer = QTimer()  # we'll use timer instead of thread
-        # self.print_timer.timeout.connect(self.add_log_serial_lines)
-        # self.print_timer.start(LOG_WINDOW_REFRESH_PERIOD_MS)  # period needs to be relatively short
+		# self.print_timer = QTimer()  # we'll use timer instead of thread
+		# self.print_timer.timeout.connect(self.add_log_serial_lines)
+		# self.print_timer.start(LOG_WINDOW_REFRESH_PERIOD_MS)  # period needs to be relatively short
 
 
-        self.widget = QWidget()
-        self.setCentralWidget(self.widget)
-        self.layout = QVBoxLayout()
-        self.widget.setLayout(self.layout)
-        self.serial_widget = serial_widget()
-        self.layout.addWidget(self.serial_widget)
-        #self.serial.new_data.connect(self.get_serial_bytes)
-        #self.serial.new_message_to_send.connect(self.add_log_outgoing_command)
+		self.widget = QWidget()
+		self.setCentralWidget(self.widget)
+		self.layout = QVBoxLayout()
+		self.widget.setLayout(self.layout)
+		self.serial_widget = serial_widget()
+		self.layout.addWidget(self.serial_widget)
+		#self.serial.new_data.connect(self.get_serial_bytes)
+		#self.serial.new_message_to_send.connect(self.add_log_outgoing_command)
 
-        # stylesheet, so I don't get blind with tiny characters #
-        self.sty = "QWidget {font-size: 10pt}"
-        self.setStyleSheet(self.sty)
+		# stylesheet, so I don't get blind with tiny characters #
+		self.sty = "QWidget {font-size: 10pt}"
+		self.setStyleSheet(self.sty)
 
-        font = self.font()
-        font.setPointSize(24)
+		font = self.font()
+		font.setPointSize(24)
 
 ## MAIN ################################################################################################################
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    app.setStyle("Fusion")  # required to use it here
-    window = MainWindow()
-    window.show()
-    app.exec_()
+	app = QApplication(sys.argv)
+	app.setStyle("Fusion")  # required to use it here
+	window = MainWindow()
+	window.show()
+	app.exec_()
 
