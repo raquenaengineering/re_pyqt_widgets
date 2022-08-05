@@ -14,7 +14,7 @@ import socket
 
 import logging
 
-logging.basicConfig(level=logging.WARNING)  # enable debug messages
+logging.basicConfig(level=logging.DEBUG)  # enable debug messages
 
 # logging.basicConfig(level = logging.WARNING)
 
@@ -106,7 +106,7 @@ class socket_widget(terminal_widget):
 
 		self.ip_address = None  					# ip address of the remote device to be used
 		self.port = None  							# port to connect to
-		self.socket = None  						# socket object used to create the connection
+		self.socket = socket.socket()  				# socket object used to create the connection
 		self.echo_flag = False						# by default echo is disabled
 		self.log_window_flag = log_window_enabled	# enables low window
 
@@ -139,14 +139,97 @@ class socket_widget(terminal_widget):
 		self.textbox_port.setEnabled(True)  # not enabled until serial port is connected.
 		self.layout_specific_connection.addWidget(self.textbox_port)
 
+
+
+	def connect(self):
+		"""
+		Connects a socket to the IP address and port given by the textboxes on the UI
+		:return: True on succesful connection, False on failed.
+		"""
+
+		ret = False
+
+		self.ip_address = self.textbox_ip.text()
+		self.port = int(self.textbox_port.text())
+		logging.debug(self.ip_address)
+		logging.debug(self.port)
+
+		try:
+			self.socket = socket.socket()							# socket needs to be created new for each connection ???
+			self.socket.connect((self.ip_address,self.port))
+			self.socket.settimeout(
+				5)  # very important TO KNOW IF SOCKET IS DEAD !!! 10s is probably a big and conservative value ATM.
+
+		except:
+			logging.warning("Socket couldn't connect")
+			ret = False
+		else:
+			logging.debug("socket connected")
+			self.read_data_timer.start()
+			ret = True
+
+		return(ret)
+
+	def disconnect(self):
+		self.socket.close()
+		logging.debug("Socket closed")
+
+
+
+	def on_button_connect_click(self):					# redefinition of terminal_widget class method
+
+		connected = self.connect()
+
+		if(connected):
+			# UI changes #
+			self.button_connect.setEnabled(False)
+			self.button_disconnect.setEnabled(True)
+			self.textbox_send_command.setEnabled(True)
+			self.b_send.setEnabled(True)
+
 	def on_button_disconnect_click(self):
-		pass
+		# main functionality #
+		self.disconnect()
+		# UI changes #
+		self.button_disconnect.setEnabled(False)
+		self.button_connect.setEnabled(True)
+		self.textbox_send_command.setEnabled(False)
+		self.textbox_send_command.clear()
+		self.textbox_send_command.clear()
+		self.b_send.setEnabled(False)
 
-	logging.debug("socket.disconnect finished")
+	def send_message(self, message):
+		"""
+		Sends a message using a socket to a slave/server device.
+		This method is blocking, it will not return until the message is sent or an error arises.
+		:param message: message to be sent to the slave/server device.
+		:return: 0 if no issues sending the message
+		"""
+		logging.debug("socket_widget.send_message method called")
+		message_b = message.encode("utf-8") + self.endline
+		self.socket.send(message_b)
 
-	def on_button_send_click(self):  # do I need another thread for this ???
-		pass
+	def receive_message(self):
+		"""
+		receives a message from a slave/server.
+		At the moment this method is blocking, with a given timeout of 0.1s
 
+		:return: the message received will be returned
+		"""
+		logging.debug("socket_widget.receive_message method called")
+		self.socket.settimeout(0.1)
+		try:
+			message = self.socket.recv(1024)											# it will return when buffer is empty anyway
+		except:
+			pass
+			logging.debug("nothing to receive")
+		else:
+			print(message)
+			return(message)
+
+
+	def on_read_data_timer(self):
+		self.receive_message()
 
 # MAIN WINDOW #################################################################################
 

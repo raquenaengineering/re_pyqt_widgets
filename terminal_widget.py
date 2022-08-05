@@ -242,6 +242,16 @@ class terminal_widget(QWidget):
 
 	#COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
 	# maybe it's interesting to consider doing it via SIGNAL TRIGGER
+
+	def connect(self):													# to be reimplemented in child class
+		pass
+	def disconnect(self):													# to be reimplemented in child class
+		pass
+	def send_message(self):												# to be reimplemented in child class
+		pass
+	def receive_message(self):											# to be reimplemented in child class
+		pass
+
 	def on_read_data_timer(self):
 		pass
 	# COMMON: every time this function is called, all completed lines are added to the log window
@@ -310,7 +320,11 @@ class terminal_widget(QWidget):
 		pass
 
 	def on_button_send_click(self):                         # SPECIFIC depending on the type of connection
-		pass
+		logging.debug("on_button_send_click() method called")
+		command = self.textbox_send_command.text()  # get what's on the textbox.
+		self.send_message(command)
+		self.textbox_send_command.setText("")
+
 
 	def on_check_echo(self):
 		val = self.check_echo.checkState()
@@ -357,6 +371,10 @@ class terminal_widget(QWidget):
 
 			for data_line in complete_lines:  # so all data points except last.
 				self.incoming_lines.append(data_line)
+
+
+
+
 
 
 class MainWindow(QMainWindow):
