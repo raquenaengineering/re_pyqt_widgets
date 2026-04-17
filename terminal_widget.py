@@ -36,7 +36,7 @@ logging.basicConfig(level=logging.WARNING)			# enable debug messages
 #logging.basicConfig(level = logging.WARNING)
 
 # qt imports #
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
 	QApplication,
 	QMainWindow,
 	QVBoxLayout,
@@ -51,33 +51,33 @@ from PyQt5.QtWidgets import (
 	QDialog,
 	QFileDialog,
 	QMessageBox,														# Dialog with extended functionality.
-	QShortcut,
 	QCheckBox,
 
 	QSystemTrayIcon,
 	QTextEdit,
 	QMenu,
-	QAction,
 	QWidget
 )
 
-from PyQt5 import *
+from PySide6 import *
 
-from PyQt5.QtGui import (
+from PySide6.QtGui import (
 	QIcon,
 	QKeySequence,
 	QColor,
+	QShortcut,
+	QAction,
 	QFont
 )
 
-from PyQt5.QtCore import(
+from PySide6.QtCore import(
 	Qt,
 	QThreadPool,
 	QRunnable,
 	QObject,
 	QSize,
-	pyqtSignal,															# those two are pyqt specific.
-	pyqtSlot,
+	Signal,															# those two are pyqt specific.
+	Slot,
 	QTimer																# nasty stuff
 )
 
@@ -131,8 +131,8 @@ class terminal_widget(QWidget):
 	endline = b'\n'                   # probably this is a better option, but it will require some changes, fix !!!
 
 
-	new_data = pyqtSignal()             # signal triggered when new data is available, to be used by parent widget.
-	new_message_to_send = pyqtSignal()  # a new message is sent to the slave, used by parent to, for example log it.
+	new_data = Signal()             # signal triggered when new data is available, to be used by parent widget.
+	new_message_to_send = Signal()  # a new message is sent to the slave, used by parent to, for example log it.
 
 	def __init__(self, log_window = False):
 

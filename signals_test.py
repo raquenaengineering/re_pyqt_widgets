@@ -18,7 +18,7 @@ import logging
 logging.basicConfig(level = logging.WARNING)
 
 # qt imports #
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
 	QApplication,
 	QMainWindow,
 	QVBoxLayout,
@@ -32,29 +32,27 @@ from PyQt5.QtWidgets import (
 	QStatusBar,
 	QDialog,
 	QMessageBox,														# Dialog with extended functionality.
-	QShortcut,
 	QCheckBox,
 
 	QSystemTrayIcon,
 	QTextEdit,
 	QMenu,
-	QAction,
 	QWidget
 )
 
-from PyQt5.QtGui import (
+from PySide6.QtGui import (
 	QIcon,
 	QKeySequence
 )
 
-from PyQt5.QtCore import(
+from PySide6.QtCore import(
 	Qt,
 	QThreadPool,
 	QRunnable,
 	QObject,
 	QSize,
-	pyqtSignal,															# those two are pyqt specific.
-	pyqtSlot,
+	Signal,															# those two are pyqt specific.
+	Slot,
 	QTimer																# nasty stuff
 
 )
@@ -77,7 +75,7 @@ class MainWindow(QMainWindow):
 
 class subwidget(QWidget):
 
-	dataready = pyqtSignal()  # signal to be emitted somewhen
+	dataready = Signal()  # signal to be emitted somewhen
 	data = []
 
 	def __init__(self):

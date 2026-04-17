@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.WARNING)			# enable debug messages
 #logging.basicConfig(level = logging.WARNING)
 
 # qt imports #
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
 	QApplication,
 	QMainWindow,
 	QVBoxLayout,
@@ -35,33 +35,31 @@ from PyQt5.QtWidgets import (
 	QDialog,
     QFileDialog,
 	QMessageBox,														# Dialog with extended functionality.
-	QShortcut,
 	QCheckBox,
 
 	QSystemTrayIcon,
 	QTextEdit,
 	QMenu,
-	QAction,
 	QWidget
 )
 
-from PyQt5 import *
-
-from PyQt5.QtGui import (
+from PySide6.QtGui import (
 	QIcon,
 	QKeySequence,
     QColor,
-    QFont
+	QShortcut,
+	QAction,
+	QFont
 )
 
-from PyQt5.QtCore import(
+from PySide6.QtCore import(
 	Qt,
 	QThreadPool,
 	QRunnable,
 	QObject,
 	QSize,
-	pyqtSignal,															# those two are pyqt specific.
-	pyqtSlot,
+	Signal,															# those two are pyqt specific.
+	Slot,
 	QTimer																# nasty stuff
 )
 

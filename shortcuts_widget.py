@@ -8,7 +8,7 @@ import numpy as np
 import csv
 
 
-from PyQt5.QtWidgets import(
+from PySide6.QtWidgets import(
 	QApplication,
 	QMainWindow,
 	QWidget,
@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import(
 
 )
 
-from PyQt5.QtCore import(
+from PySide6.QtCore import(
 	QTimer,
 	Qt,
 )
