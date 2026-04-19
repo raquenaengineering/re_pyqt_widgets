@@ -275,7 +275,7 @@ class terminal_widget(QWidget):
 				self.log_text.setTextColor(color)
 				l = ">> " + str(line)                                            # marking for incoming lines
 				self.log_text.append(l)
-		self.incoming_lines = []                                                # data is already on text_edit, not needed anymore
+		# self.incoming_lines = []                                                # data is already on text_edit, not needed anymore
 
 	def add_outgoing_lines_to_log(self):
 		logging.debug("add_outgoing_lines_to_log method called")

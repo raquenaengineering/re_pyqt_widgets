@@ -17,7 +17,6 @@ import socket
 import logging
 logging.basicConfig(level=logging.WARNING)			# enable debug messages
 
-#logging.basicConfig(level = logging.WARNING)
 
 # qt imports #
 from PySide6.QtWidgets import (
@@ -180,7 +179,25 @@ class serial_widget(terminal_widget):
 		self.layout_specific_connection.addWidget(self.combo_endline_params)
 
 	def on_read_data_timer(self):
-		logging.debug("on_read_data_timer()")
+		logging.warning("on_read_data_timer()")
+
+		"""
+		WHAT THIS METHOD SHOULD DO:
+		READ DATA FROM THE SERIAL PORT
+		STORE IT IN A VARIABLE WHERE ALSO OLD DATA IS
+		MAKE SURE THAT DATA IS NOT BIGGER THAN A CERTAIN SIZE
+			IF TOO MUCH DATA; SIMPLY POP ALL OLD VALUES TO MAKE PLACE FOR THE NEW
+		IF THAT DATA IS USED; DELETE IT
+			USE MEANS:
+				- IF THERE IS TERMINAL; IT IS PRINTED THER
+				- IF THERE IS LOG; IT IS ADDED TO LOG
+				- IF SOMEONE NEEDS THAT DATA; THAT DATA HAS BEEN REQUESTED AND USED	
+
+		"""
+
+
+
+		# READ THE DATA TO A BUFFER #
 		try:
 			self.readed_bytes = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
 		except Exception as e:
@@ -193,27 +210,44 @@ class serial_widget(terminal_widget):
 			logging.debug(self.SEPARATOR)
 			logging.debug("Bytes:")
 			logging.debug(self.SEPARATOR)
-			logging.debug(self.readed_bytes)
+			logging.warning(self.readed_bytes)
 			logging.debug(self.SEPARATOR)
 			#if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
-			if(True):
-				self.add_incoming_lines_to_log()  # print to log window (atm not working)
-				file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
-				logging.debug("saved to file")
-				file.write(self.incoming_data)
-				file.write('\n')
-				chars = None  # indeed there's no new information/messages.
 
-				# logging.debug(byte_buffer)
-				# after collecting some data on the byte buffer, store it in a static variable, and
-				# emit a signal, so another window can subscribe to it, and handle the data when needed.
-				self.new_data.emit()
-				self.byte_buffer = self.byte_buffer + self.readed_bytes  # only reading the bytes, but NO PARSING
+			# THIS MAKES NO SENSE THAT IT ALWAYS DUMPS DATA TO THE FILE #
 
-		logging.debug("self.readed_bytes")
-		logging.debug(self.readed_bytes)
-		logging.debug("self.byte_buffer")
-		logging.debug(self.byte_buffer)
+			#
+			# add_to_log_window = True
+			# if(add_to_log_window == True):
+			# 	self.add_incoming_lines_to_log()  # print to log window
+
+			# save_to_file = False
+			# if(save_to_file == True):
+			# 	file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
+			# 	logging.debug("saved to file")
+			# 	file.write(self.incoming_data)
+			# 	file.write('\n')
+			# 	chars = None  # indeed there's no new information/messages.
+			#
+			# 	# logging.debug(byte_buffer)
+			# 	# after collecting some data on the byte buffer, store it in a static variable, and
+			# 	# emit a signal, so another window can subscribe to it, and handle the data when needed.
+
+
+			self.new_data.emit()		# Emit signal data available for other widgets !!!
+			# ATTENTION !!! LIMIT SIZE OF BYTE_BUFFER !!! #
+			self.byte_buffer = self.byte_buffer + self.readed_bytes  	# only reading the bytes, but NO PARSING
+				# print(self.byte_buffer)
+				# print(self.readed_bytes)								# clean now readed bytes, as data is now in byte_buffer
+
+			self.readed_bytes = None
+
+		logging.warning("self.readed_bytes")
+		logging.warning(self.readed_bytes)
+		logging.warning("self.byte_buffer")
+		logging.warning(self.byte_buffer)
+
+		self.incoming_lines = []									#clean buffer
 
 
 
@@ -610,5 +644,5 @@ if __name__ == '__main__':
 	app.setStyle("Fusion")  # required to use it here
 	window = MainWindow()
 	window.show()
-	app.exec_()
+	app.exec()
 
