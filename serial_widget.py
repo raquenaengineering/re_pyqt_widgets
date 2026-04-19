@@ -85,27 +85,6 @@ class serial_widget(terminal_widget):
 
 	# class constants #
 	SERIAL_BUFFER_SIZE = 2000  # buffer size to store the incoming data from serial, to afterwards process it.
-
-	# class variables #
-	serial_ports = list  # list of serial ports detected
-	serial_port = None  # serial port used for the communication
-	serial_connected = False
-	c = False  # variable to poll if port connected or not (useful for parent)
-	serial_port_name = None  # used to pass it to the worker dealing with the serial port.
-	serial_baudrate = None  # default baudrate
-
-	endline = None  # no default value for endline, will be assigned on initialisation.
-	error_type = None  # flag to transmit data to the error handling
-	# terminal_widget has already message_to_send #serial_message_to_send = None  # if not none, is a message to be sent via serial port
-	# terminal_widget #echo_flag = False
-	timeouts = 0
-	# terminal_widget #byte_buffer = b''  # all chars read from serial come here, should it go somewhere else?
-	# terminal_widget log_folder = "logs"  # in the beginning, log folder, path and filename are fixed
-	# terminal_widget log_file_name = "serial_log_file"  # all communication in and out (could be) collected here.
-	#terminal_widget log_file_type = ".txt"  # file extension
-	#terminal_widget log_full_path = None  # this variable will be the one used to record
-	#terminal_widget echo_flag = False
-
 	SERIAL_SPEEDS = [
 		"300",
 		"1200",
@@ -129,6 +108,31 @@ class serial_widget(terminal_widget):
 		"Carriage Return",
 		"Both NL & CR"
 	]
+
+	# class variables #
+	serial_ports = list  # list of serial ports detected
+	serial_port = None  # serial port used for the communication
+	serial_connected = False
+	c = False  # variable to poll if port connected or not (useful for parent)
+	serial_port_name = None  # used to pass it to the worker dealing with the serial port.
+	serial_baudrate = None  # default baudrate
+
+	endline = None  # no default value for endline, will be assigned on initialisation.
+	error_type = None  # flag to transmit data to the error handling
+	# terminal_widget has already message_to_send #serial_message_to_send = None  # if not none, is a message to be sent via serial port
+	# terminal_widget #echo_flag = False
+	timeouts = 0
+	# terminal_widget #byte_buffer = b''  # all chars read from serial come here, should it go somewhere else?
+	# terminal_widget log_folder = "logs"  # in the beginning, log folder, path and filename are fixed
+	# terminal_widget log_file_name = "serial_log_file"  # all communication in and out (could be) collected here.
+	#terminal_widget log_file_type = ".txt"  # file extension
+	#terminal_widget log_full_path = None  # this variable will be the one used to record
+	#terminal_widget echo_flag = False
+
+	# logfile related #
+	save_to_log_file = True					# by default, all data written to the log window will also be dumped to a logfile.
+
+
 
 	def __init__(self, log_window=None):
 
@@ -185,26 +189,24 @@ class serial_widget(terminal_widget):
 		self.update_ports_timer.start(3000)								# every  3 seconds seems reasonable.
 		self.update_ports_timer.stop()									# enable for autoupdate of serial ports every certain time.
 
-	def on_read_data_timer(self):
-		logging.warning("on_read_data_timer()")
 
+	def on_read_data_timer(self):
 		"""
 		WHAT THIS METHOD SHOULD DO:
-		READ DATA FROM THE SERIAL PORT
-		STORE IT IN A VARIABLE WHERE ALSO OLD DATA IS
-		MAKE SURE THAT DATA IS NOT BIGGER THAN A CERTAIN SIZE
-			IF TOO MUCH DATA; SIMPLY POP ALL OLD VALUES TO MAKE PLACE FOR THE NEW
-		IF THAT DATA IS USED; DELETE IT
+			READ DATA FROM THE SERIAL PORT
+			STORE IT IN A VARIABLE WHERE ALSO OLD DATA IS
+			MAKE SURE THAT DATA IS NOT BIGGER THAN A CERTAIN SIZE
+				IF TOO MUCH DATA; SIMPLY POP ALL OLD VALUES TO MAKE PLACE FOR THE NEW
+				IF THAT DATA IS USED; DELETE IT
 			USE MEANS:
-				- IF THERE IS TERMINAL; IT IS PRINTED THER
+				- IF THERE IS TERMINAL; IT IS PRINTED THERE
 				- IF THERE IS LOG; IT IS ADDED TO LOG
-				- IF SOMEONE NEEDS THAT DATA; THAT DATA HAS BEEN REQUESTED AND USED	
-
+				- IF SOMEONE NEEDS THAT DATA; THAT DATA HAS BEEN REQUESTED AND USED
+		:return:
 		"""
 
-
-
-		# READ THE DATA TO A BUFFER #
+		# 	# READ THE DATA TO A BUFFER #
+		logging.debug("on_read_data_timer()")
 		try:
 			self.readed_bytes = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
 		except Exception as e:
@@ -217,47 +219,93 @@ class serial_widget(terminal_widget):
 			logging.debug(self.SEPARATOR)
 			logging.debug("Bytes:")
 			logging.debug(self.SEPARATOR)
-			logging.warning(self.readed_bytes)
+			logging.debug(self.readed_bytes)
 			logging.debug(self.SEPARATOR)
 			#if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
+			if(True):
+				# PRINT TO LOG WINDOW #
+				self.add_incoming_lines_to_log()  # print to log window
 
-			# THIS MAKES NO SENSE THAT IT ALWAYS DUMPS DATA TO THE FILE #
+			if(self.save_to_log_file == True):
+				# SAVE TO LOGFILE #
+				file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
+				logging.debug("saved to file")
+				file.write(self.incoming_data)
+				file.write('\n')
+				chars = None  # indeed there's no new information/messages.
 
-			#
-			# add_to_log_window = True
-			# if(add_to_log_window == True):
-			# 	self.add_incoming_lines_to_log()  # print to log window
+				# logging.debug(byte_buffer)
+				# after collecting some data on the byte buffer, store it in a static variable, and
+				# emit a signal, so another window can subscribe to it, and handle the data when needed.
+				self.new_data.emit()
+				self.byte_buffer = self.byte_buffer + self.readed_bytes  # only reading the bytes, but NO PARSING
 
-			# save_to_file = False
-			# if(save_to_file == True):
-			# 	file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
-			# 	logging.debug("saved to file")
-			# 	file.write(self.incoming_data)
-			# 	file.write('\n')
-			# 	chars = None  # indeed there's no new information/messages.
-			#
-			# 	# logging.debug(byte_buffer)
-			# 	# after collecting some data on the byte buffer, store it in a static variable, and
-			# 	# emit a signal, so another window can subscribe to it, and handle the data when needed.
-
-
-			self.new_data.emit()		# Emit signal data available for other widgets !!!
-			# ATTENTION !!! LIMIT SIZE OF BYTE_BUFFER !!! #
-			self.byte_buffer = self.byte_buffer + self.readed_bytes  	# only reading the bytes, but NO PARSING
-				# print(self.byte_buffer)
-				# print(self.readed_bytes)								# clean now readed bytes, as data is now in byte_buffer
-
-			self.readed_bytes = None
-
-		logging.warning("self.readed_bytes")
-		logging.warning(self.readed_bytes)
-		logging.warning("self.byte_buffer")
-		logging.warning(self.byte_buffer)
-
-		self.incoming_lines = []									#clean buffer
+		logging.debug("self.readed_bytes")
+		logging.debug(self.readed_bytes)
+		logging.debug("self.byte_buffer")
+		logging.debug(self.byte_buffer)
 
 
-
+	#
+	#
+	# def on_read_data_timer(self):
+	# 	logging.warning("on_read_data_timer()")
+	#
+	#
+	#
+	# 	try:
+	# 		self.readed_bytes = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
+	# 	except Exception as e:
+	# 		self.on_port_error(e)
+	# 		self.on_button_disconnect_click()  # we've crashed the serial, so disconnect and REFRESH PORTS!!!
+	# 	else:
+	# 		logging.debug("Chars:")
+	# 		logging.debug(self.SEPARATOR)
+	# 		logging.debug(self.incoming_data)
+	# 		logging.debug(self.SEPARATOR)
+	# 		logging.debug("Bytes:")
+	# 		logging.debug(self.SEPARATOR)
+	# 		logging.warning(self.readed_bytes)
+	# 		logging.debug(self.SEPARATOR)
+	# 		#if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
+	#
+	# 		# THIS MAKES NO SENSE THAT IT ALWAYS DUMPS DATA TO THE FILE #
+	#
+	# 		#
+	# 		# add_to_log_window = True
+	# 		# if(add_to_log_window == True):
+	# 		# 	self.add_incoming_lines_to_log()  # print to log window
+	#
+	# 		# save_to_file = False
+	# 		# if(save_to_file == True):
+	# 		# 	file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
+	# 		# 	logging.debug("saved to file")
+	# 		# 	file.write(self.incoming_data)
+	# 		# 	file.write('\n')
+	# 		# 	chars = None  # indeed there's no new information/messages.
+	# 		#
+	# 		# 	# logging.debug(byte_buffer)
+	# 		# 	# after collecting some data on the byte buffer, store it in a static variable, and
+	# 		# 	# emit a signal, so another window can subscribe to it, and handle the data when needed.
+	#
+	#
+	# 		self.new_data.emit()		# Emit signal data available for other widgets !!!
+	# 		# ATTENTION !!! LIMIT SIZE OF BYTE_BUFFER !!! #
+	# 		self.byte_buffer = self.byte_buffer + self.readed_bytes  	# only reading the bytes, but NO PARSING
+	# 			# print(self.byte_buffer)
+	# 			# print(self.readed_bytes)								# clean now readed bytes, as data is now in byte_buffer
+	#
+	# 		self.readed_bytes = None
+	#
+	# 	logging.warning("self.readed_bytes")
+	# 	logging.warning(self.readed_bytes)
+	# 	logging.warning("self.byte_buffer")
+	# 	logging.warning(self.byte_buffer)
+	#
+	# 	self.incoming_lines = []									#clean buffer
+	#
+	#
+	#
 
 
 
