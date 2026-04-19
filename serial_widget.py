@@ -178,6 +178,13 @@ class serial_widget(terminal_widget):
 		self.change_endline_style()  # sets the default endline style
 		self.layout_specific_connection.addWidget(self.combo_endline_params)
 
+		# update serial ports timer #
+		self.update_ports_timer = QTimer()
+		self.update_ports_timer.timeout.connect(
+			self.update_serial_ports)									# updating serial port list in a regular time basis.
+		self.update_ports_timer.start(3000)								# every  3 seconds seems reasonable.
+		self.update_ports_timer.stop()									# enable for autoupdate of serial ports every certain time.
+
 	def on_read_data_timer(self):
 		logging.warning("on_read_data_timer()")
 
