@@ -291,8 +291,7 @@ class terminal_widget(QWidget):
 			self.log_text.setTextColor(color)
 			logging.debug("self.message_to_send")
 			logging.debug(self.message_to_send)
-			l = "<< " + self.message_to_send.decode("utf-8",
-													errors="ignore")  # marking for outgoing lines
+			l = "<< " + self.message_to_send
 			self.log_text.append(l)
 
 	# COMMON: both serial and socket have a button to save the current log #
@@ -316,6 +315,8 @@ class terminal_widget(QWidget):
 	def on_button_connect_click(self):                      # SPECIFIC depending on the type of connection
 		"""
 		Dummy, changes the enabled widgets as it had real functionality.
+		can be used as self.parent.on_button_connect_click() to implement some functionality.
+
 		:return:
 		"""
 		self.button_connect.setEnabled(False)
@@ -326,6 +327,7 @@ class terminal_widget(QWidget):
 	def on_button_disconnect_click(self):                   # SPECIFIC depending on the type of connection
 		"""
 		Dummy, changes the enabled widgets as it had real functionality.
+		can be used as self.parent.on_button_disconnect_click() to implement some functionality.
 		:return:
 		"""
 		self.button_connect.setEnabled(True)
@@ -333,6 +335,14 @@ class terminal_widget(QWidget):
 		self.textbox_send_command.setEnabled(False)
 		self.button_send.setEnabled(False)
 
+	def on_read_data_timer(self):
+		"""
+		To be reimplemented on each child class.
+		Callback to run every tick of the data timer.
+		This should contain reads to wherever the incoming data comes from
+		For example: Serial port, Socket port.
+		:return:
+		"""
 
 	def on_button_send_click(self):                         # SPECIFIC depending on the type of connection
 		"""
@@ -343,6 +353,8 @@ class terminal_widget(QWidget):
 		"""
 		self.add_outgoing_lines_to_log()
 
+		# ONLY FOR TESTING !!!! #
+		# ECHOES ALL STRINGS SENT AS THEY WERE RECEIVED BACK #
 		self.message_to_send = self.textbox_send_command.text()
 		print("text gotten from textbox:", self.message_to_send)
 		self.incoming_lines.append("Received text:   " + self.message_to_send)

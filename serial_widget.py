@@ -247,31 +247,28 @@ class serial_widget(terminal_widget):
 
 	def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
 		logging.debug("Connect Button Clicked")  # how to determine a connection was succesful ???
-		self.button_connect.setEnabled(False)
-		self.button_disconnect.setEnabled(True)
+		# terminal connection status related #
+		super().on_button_connect_click()
+		# serial port related #
 		self.combo_serial_port.setEnabled(False)
 		self.button_update_ports.setEnabled(False)
 		self.combo_serial_speed.setEnabled(False)
 		self.combo_endline_params.setEnabled(False)
-		self.textbox_send_command.setEnabled(True)
-		# self.status_bar.showMessage("Connecting...")  # showing sth is happening.
+		# self.status_bar.showMessage("Connecting...")  # THE WIDGET DOESN'T HAVE STATUS BAR. showing sth is happening.
 		self.start_serial()
 
-		self.first_toggles = 0
-		# UI changes #
-		self.button_connect.setEnabled(False)
-		self.button_disconnect.setEnabled(True)
-		self.textbox_send_command.setEnabled(True)
-		self.button_send.setEnabled(True)
 	def on_button_disconnect_click(self):
 		logging.debug("on_button_disconnect_click() method called")
-		self.button_disconnect.setEnabled(False)  # toggle the enable of the connect/disconnect buttons
-		self.button_connect.setEnabled(True)
+
+		# all common terminal_widget implementation #
+		super().on_button_disconnect_click()
+		# specifics of serial_widget UI#
 		self.button_update_ports.setEnabled(True)
 		self.combo_serial_port.setEnabled(True)
 		self.combo_serial_speed.setEnabled(True)
 		self.combo_endline_params.setEnabled(True)
-		self.textbox_send_command.setEnabled(False)
+
+		# SERIAL WIDGET CORE FUNCTIONALITY #
 		self.byte_buffer = b''  # clear byte buffer
 		self.serial_connected = False
 		# self.status_bar.showMessage("Disconnected")    # showing sth is happening.
@@ -281,6 +278,7 @@ class serial_widget(terminal_widget):
 			logging.warning("Tried  to close serial port, but was already closed")
 		self.read_data_timer.stop()
 		logging.debug(self.SEPARATOR)
+
 	def on_button_send_click(self):  # do I need another thread for this ???
 		self.send_serial()
 	def send_serial(self):  # do I need another thread for this ???
