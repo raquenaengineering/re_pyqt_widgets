@@ -106,7 +106,7 @@ class terminal_widget(QWidget):
 	SEND_TEXT_COLOR = "green"
 	SEPARATOR = "----------------------------------------------------------"
 
-	LOG_WINDOW_REFRESH_PERIOD_MS = 100  # maybe better to move to an event based system.
+	# LOG_WINDOW_REFRESH_PERIOD_MS = 5000  # maybe better to move to an event based system.
 	MAX_TEXT_SIZE = 30
 	MIN_TEXT_SIZE = 5
 
@@ -117,15 +117,16 @@ class terminal_widget(QWidget):
 	byte_buffer = b''                   # buffer where the received bytes are stored until used.
 	readed_bytes = b''                  # bytes received in the last read
 	recording = False                   # flag to start/stop recording.
-	log_window_flag = None              # when True, shows the reception log window, clear and save buttons, if not, means the data will be handled in a different way.
+	log_window_flag = False             # when True, shows the reception log window, clear and save buttons, if not, means the data will be handled in a different way.
 	log_folder = "logs"                 # in the beginning, log folder, path and filename are fixed
 	log_file_name = "log_file"          # all communication in and out (could be) collected here.
 	log_file_type = ".txt"              # file extension
 	log_full_path = None                # this variable will be the one used to record
-	read_data_timer_period = 100        # period in ms to read incoming data
-	log_window_refresh_period = 100     # the log windows isn't updated inmediately, but every 100ms
+	read_data_timer_period = 1000       # period in ms to read incoming data
+	log_window_refresh_period =3000     # the log windows isn't updated inmediately, but every 100ms
 	incoming_data = ""                  # characters converted from readed_bytes, to be converted in
 	incoming_lines = []                 # contains all incoming data separated by lines, to print it on the log_window
+	save_to_log_file = True				# by default, all data written to the log window will also be dumped to a logfile.
 
 	#endline = "\n"                      # requred to get the data properly interpreted
 	endline = b'\n'                   # probably this is a better option, but it will require some changes, fix !!!
@@ -152,7 +153,7 @@ class terminal_widget(QWidget):
 
 		# log print timer #
 		self.print_timer = QTimer()  # we'll use timer instead of thread
-		self.print_timer.timeout.connect(self.add_incoming_lines_to_log)
+		self.print_timer.timeout.connect(self.on_print_timer)
 		self.print_timer.start(self.log_window_refresh_period)  # period needs to be relatively short
 		self.print_timer.stop()  # by default the timer will be off, enabled by connect.
 
@@ -243,8 +244,66 @@ class terminal_widget(QWidget):
 	#COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
 	# maybe it's interesting to consider doing it via SIGNAL TRIGGER
 	def on_read_data_timer(self):
-		pass
-	# COMMON: every time this function is called, all completed lines are added to the log window
+		"""
+		To be reimplemented on each child class.
+		Callback to run every tick of the data timer.
+		This should contain reads to wherever the incoming data comes from
+		For example: Serial port, Socket port.
+		The current implementation will add some random data to use as an example.
+		:return:
+		"""
+		# could also read random bullshit from a file, for example.
+
+		# READ THE DATA TO A BUFFER #
+		logging.warning("on_read_data_timer()")
+		try:
+			self.readed_bytes = b"random stuff"		# wherever the data comes from
+			print("self.readed_bytes")
+			print(self.readed_bytes)
+		except Exception as e:
+			print("couldn't read bytes from anywhere")
+		else:
+			if(self.readed_bytes):
+				print("new input data")
+
+
+			logging.debug("Chars:")
+			logging.debug(self.SEPARATOR)
+			logging.debug(self.incoming_data)
+			logging.debug(self.SEPARATOR)
+			logging.debug("Bytes:")
+			logging.debug(self.SEPARATOR)
+			logging.debug(self.readed_bytes)
+			logging.debug(self.SEPARATOR)
+			# if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
+			if (self.log_window_flag == True):				# if the log window is disabled no need to do the job ???
+				# PRINT TO LOG WINDOW -->
+				# should I keep the text printing to the log window just in case I decide to enable it interactively ???
+				self.add_incoming_lines_to_log()  # print to log window
+
+			if (self.save_to_log_file == True):
+				# SAVE TO LOGFILE #
+				file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
+				logging.debug("saved to file")
+				file.write(self.incoming_data)
+				file.write('\n')
+				chars = None  # indeed there's no new information/messages.
+
+				# logging.debug(byte_buffer)
+				# after collecting some data on the byte buffer, store it in a static variable, and
+				# emit a signal, so another window can subscribe to it, and handle the data when needed.
+				self.new_data.emit()
+				self.byte_buffer = self.byte_buffer + self.readed_bytes  # only reading the bytes, but NO PARSING
+
+		logging.debug("self.readed_bytes")
+		logging.debug(self.readed_bytes)
+		logging.debug("self.byte_buffer")
+		logging.debug(self.byte_buffer)
+
+	def on_print_timer(self):
+		logging.warning("on_print_timer()")
+		self.add_incoming_lines_to_log()
+
 
 
 	def enable_log_window(self):
@@ -287,12 +346,14 @@ class terminal_widget(QWidget):
 		logging.debug("add_outgoing_lines_to_log method called")
 		if (self.echo_flag == True):
 			logging.debug("echo flag enabled, echoing message on log window")
-			color = QColor(self.SEND_TEXT_COLOR)
-			self.log_text.setTextColor(color)
+			color = QColor(self.SEND_TEXT_COLOR)								# sent text goes in green
+			self.log_text.setTextColor(color)									# sent text goes in green
 			logging.debug("self.message_to_send")
 			logging.debug(self.message_to_send)
-			l = "<< " + self.message_to_send
-			self.log_text.append(l)
+			logging.warning("typeof self.message_to_send")
+			logging.warning(type(self.message_to_send))
+			l = "<< " + self.message_to_send									# messages sent add << in front instead of >>
+			self.log_text.append(l)												# add to log
 
 	# COMMON: both serial and socket have a button to save the current log #
 	def save_log(self):
@@ -323,6 +384,10 @@ class terminal_widget(QWidget):
 		self.button_disconnect.setEnabled(True)
 		self.textbox_send_command.setEnabled(True)
 		self.button_send.setEnabled(True)
+		self.read_data_timer.start()
+
+		self.read_data_timer.start(self.read_data_timer_period)  # period needs to be relatively short
+
 
 	def on_button_disconnect_click(self):                   # SPECIFIC depending on the type of connection
 		"""
@@ -334,15 +399,10 @@ class terminal_widget(QWidget):
 		self.button_disconnect.setEnabled(False)
 		self.textbox_send_command.setEnabled(False)
 		self.button_send.setEnabled(False)
+		self.read_data_timer.stop()
 
-	def on_read_data_timer(self):
-		"""
-		To be reimplemented on each child class.
-		Callback to run every tick of the data timer.
-		This should contain reads to wherever the incoming data comes from
-		For example: Serial port, Socket port.
-		:return:
-		"""
+
+
 
 	def on_button_send_click(self):                         # SPECIFIC depending on the type of connection
 		"""
@@ -355,9 +415,9 @@ class terminal_widget(QWidget):
 
 		# ONLY FOR TESTING !!!! #
 		# ECHOES ALL STRINGS SENT AS THEY WERE RECEIVED BACK #
-		self.message_to_send = self.textbox_send_command.text()
+		self.message_to_send = self.textbox_send_command.text()		# maybe better to do this with method input parameters, using class variables obfuscates its use.
 		print("text gotten from textbox:", self.message_to_send)
-		self.incoming_lines.append("Received text:   " + self.message_to_send)
+		# self.incoming_lines.append("Received text:   " + self.message_to_send)
 
 	def on_check_echo(self):
 		val = self.check_echo.checkState()
@@ -422,7 +482,7 @@ class MainWindow(QMainWindow):
 		super().__init__()
 
 		self.terminal = terminal_widget(log_window = True)
-		self.terminal.print_timer.start(self.terminal.LOG_WINDOW_REFRESH_PERIOD_MS)
+		self.terminal.print_timer.start(self.terminal.log_window_refresh_period)
 		self.setCentralWidget(self.terminal)
 		# stylesheet, so I don't get blind with tiny characters #
 		self.sty = "QWidget {font-size: 10pt}"
@@ -439,4 +499,4 @@ if __name__ == '__main__':
 	app.setStyle("Fusion")  # required to use it here
 	window = MainWindow()
 	window.show()
-	app.exec_()
+	app.exec()
