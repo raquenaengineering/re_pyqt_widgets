@@ -201,7 +201,7 @@ class socket_widget(terminal_widget):
         self.button_connect.setEnabled(False)
         self.button_disconnect.setEnabled(True)
         self.textbox_send_command.setEnabled(True)
-        self.b_send.setEnabled(True)
+        self.button_send.setEnabled(True)
 
     def on_button_disconnect_click(self):
         # critical stuff to stop #
@@ -218,7 +218,7 @@ class socket_widget(terminal_widget):
         self.textbox_send_command.setEnabled(False)
         self.textbox_send_command.clear()
         self.textbox_send_command.clear()
-        self.b_send.setEnabled(False)
+        self.button_send.setEnabled(False)
 
 
 

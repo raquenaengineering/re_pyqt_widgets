@@ -262,7 +262,7 @@ class serial_widget(terminal_widget):
 		self.button_connect.setEnabled(False)
 		self.button_disconnect.setEnabled(True)
 		self.textbox_send_command.setEnabled(True)
-		self.b_send.setEnabled(True)
+		self.button_send.setEnabled(True)
 	def on_button_disconnect_click(self):
 		logging.debug("on_button_disconnect_click() method called")
 		self.button_disconnect.setEnabled(False)  # toggle the enable of the connect/disconnect buttons

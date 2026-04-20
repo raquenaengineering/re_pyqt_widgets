@@ -197,10 +197,10 @@ class terminal_widget(QWidget):
 		self.textbox_send_command.setEnabled(False)						# not enabled until serial port is connected.
 		self.layout_send.addWidget(self.textbox_send_command)
 		# send button #
-		self.b_send = QPushButton("Send")
-		self.b_send.clicked.connect(self.on_button_send_click)					# same action as enter in textbox
-		self.b_send.setEnabled(False)
-		self.layout_send.addWidget(self.b_send)
+		self.button_send = QPushButton("Send")
+		self.button_send.clicked.connect(self.on_button_send_click)					# same action as enter in textbox
+		self.button_send.setEnabled(False)
+		self.layout_send.addWidget(self.button_send)
 		# checkbox echo#
 		self.check_echo = QCheckBox("Echo")
 		self.check_echo.setChecked(self.echo_flag)                        # whatever the default echo varaible value is
@@ -278,6 +278,12 @@ class terminal_widget(QWidget):
 		self.incoming_lines = []                                                # data is already on text_edit, not needed anymore
 
 	def add_outgoing_lines_to_log(self):
+		"""
+		This method is used when we need to have local echo of the sent commands
+		The current implementation is not great !!! --> find a better way to do this
+
+		:return:
+		"""
 		logging.debug("add_outgoing_lines_to_log method called")
 		if (self.echo_flag == True):
 			logging.debug("echo flag enabled, echoing message on log window")
@@ -308,13 +314,38 @@ class terminal_widget(QWidget):
 		self.log_text.clear()
 
 	def on_button_connect_click(self):                      # SPECIFIC depending on the type of connection
-		pass
+		"""
+		Dummy, changes the enabled widgets as it had real functionality.
+		:return:
+		"""
+		self.button_connect.setEnabled(False)
+		self.button_disconnect.setEnabled(True)
+		self.textbox_send_command.setEnabled(True)
+		self.button_send.setEnabled(True)
 
 	def on_button_disconnect_click(self):                   # SPECIFIC depending on the type of connection
-		pass
+		"""
+		Dummy, changes the enabled widgets as it had real functionality.
+		:return:
+		"""
+		self.button_connect.setEnabled(True)
+		self.button_disconnect.setEnabled(False)
+		self.textbox_send_command.setEnabled(False)
+		self.button_send.setEnabled(False)
+
 
 	def on_button_send_click(self):                         # SPECIFIC depending on the type of connection
-		pass
+		"""
+		Dummy function to test the proper
+		functioning of the log window and other widgets.
+		On sending anything, it adds it to incoming_lines.
+		:return:
+		"""
+		self.add_outgoing_lines_to_log()
+
+		self.message_to_send = self.textbox_send_command.text()
+		print("text gotten from textbox:", self.message_to_send)
+		self.incoming_lines.append("Received text:   " + self.message_to_send)
 
 	def on_check_echo(self):
 		val = self.check_echo.checkState()
@@ -362,6 +393,8 @@ class terminal_widget(QWidget):
 			for data_line in complete_lines:  # so all data points except last.
 				self.incoming_lines.append(data_line)
 
+	# def add_incoming_lines_to_log(self):
+	# 	pass
 
 class MainWindow(QMainWindow):
 	# class variables #
@@ -376,12 +409,8 @@ class MainWindow(QMainWindow):
 
 		super().__init__()
 
-		# self.print_timer = QTimer()  # we'll use timer instead of thread			# but this should be inside the class, isnt it?
-		self.print_timer.timeout.connect(self.add_incoming_lines_to_log)
-		# self.print_timer.start(LOG_WINDOW_REFRESH_PERIOD_MS)  # period needs to be relatively short
-
-		#self.widget = QWidget()
 		self.terminal = terminal_widget(log_window = True)
+		self.terminal.print_timer.start(self.terminal.LOG_WINDOW_REFRESH_PERIOD_MS)
 		self.setCentralWidget(self.terminal)
 		# stylesheet, so I don't get blind with tiny characters #
 		self.sty = "QWidget {font-size: 10pt}"
