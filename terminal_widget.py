@@ -125,7 +125,7 @@ class terminal_widget(QWidget):
 	read_data_timer_period = 100        # period in ms to read incoming data
 	log_window_refresh_period = 100     # the log windows isn't updated inmediately, but every 100ms
 	incoming_data = ""                  # characters converted from readed_bytes, to be converted in
-	incoming_lines = []                 # contains all incoming data separated by lines, to plot it on the log_window
+	incoming_lines = []                 # contains all incoming data separated by lines, to print it on the log_window
 
 	#endline = "\n"                      # requred to get the data properly interpreted
 	endline = b'\n'                   # probably this is a better option, but it will require some changes, fix !!!
@@ -275,7 +275,7 @@ class terminal_widget(QWidget):
 				self.log_text.setTextColor(color)
 				l = ">> " + str(line)                                            # marking for incoming lines
 				self.log_text.append(l)
-		# self.incoming_lines = []                                                # data is already on text_edit, not needed anymore
+		self.incoming_lines = []                                                # data is already on text_edit, not needed anymore
 
 	def add_outgoing_lines_to_log(self):
 		logging.debug("add_outgoing_lines_to_log method called")
@@ -301,6 +301,10 @@ class terminal_widget(QWidget):
 		except:
 			logging.debug("Error saving to file")
 	def clear_log(self):
+		"""
+		Clears the log window, but doesn't delete the buffer containing the data that will be printed there.
+		:return:
+		"""
 		self.log_text.clear()
 
 	def on_button_connect_click(self):                      # SPECIFIC depending on the type of connection
@@ -372,7 +376,7 @@ class MainWindow(QMainWindow):
 
 		super().__init__()
 
-		# self.print_timer = QTimer()  # we'll use timer instead of thread
+		# self.print_timer = QTimer()  # we'll use timer instead of thread			# but this should be inside the class, isnt it?
 		self.print_timer.timeout.connect(self.add_incoming_lines_to_log)
 		# self.print_timer.start(LOG_WINDOW_REFRESH_PERIOD_MS)  # period needs to be relatively short
 

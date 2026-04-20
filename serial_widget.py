@@ -245,70 +245,6 @@ class serial_widget(terminal_widget):
 		logging.debug("self.byte_buffer")
 		logging.debug(self.byte_buffer)
 
-
-	#
-	#
-	# def on_read_data_timer(self):
-	# 	logging.warning("on_read_data_timer()")
-	#
-	#
-	#
-	# 	try:
-	# 		self.readed_bytes = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
-	# 	except Exception as e:
-	# 		self.on_port_error(e)
-	# 		self.on_button_disconnect_click()  # we've crashed the serial, so disconnect and REFRESH PORTS!!!
-	# 	else:
-	# 		logging.debug("Chars:")
-	# 		logging.debug(self.SEPARATOR)
-	# 		logging.debug(self.incoming_data)
-	# 		logging.debug(self.SEPARATOR)
-	# 		logging.debug("Bytes:")
-	# 		logging.debug(self.SEPARATOR)
-	# 		logging.warning(self.readed_bytes)
-	# 		logging.debug(self.SEPARATOR)
-	# 		#if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
-	#
-	# 		# THIS MAKES NO SENSE THAT IT ALWAYS DUMPS DATA TO THE FILE #
-	#
-	# 		#
-	# 		# add_to_log_window = True
-	# 		# if(add_to_log_window == True):
-	# 		# 	self.add_incoming_lines_to_log()  # print to log window
-	#
-	# 		# save_to_file = False
-	# 		# if(save_to_file == True):
-	# 		# 	file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
-	# 		# 	logging.debug("saved to file")
-	# 		# 	file.write(self.incoming_data)
-	# 		# 	file.write('\n')
-	# 		# 	chars = None  # indeed there's no new information/messages.
-	# 		#
-	# 		# 	# logging.debug(byte_buffer)
-	# 		# 	# after collecting some data on the byte buffer, store it in a static variable, and
-	# 		# 	# emit a signal, so another window can subscribe to it, and handle the data when needed.
-	#
-	#
-	# 		self.new_data.emit()		# Emit signal data available for other widgets !!!
-	# 		# ATTENTION !!! LIMIT SIZE OF BYTE_BUFFER !!! #
-	# 		self.byte_buffer = self.byte_buffer + self.readed_bytes  	# only reading the bytes, but NO PARSING
-	# 			# print(self.byte_buffer)
-	# 			# print(self.readed_bytes)								# clean now readed bytes, as data is now in byte_buffer
-	#
-	# 		self.readed_bytes = None
-	#
-	# 	logging.warning("self.readed_bytes")
-	# 	logging.warning(self.readed_bytes)
-	# 	logging.warning("self.byte_buffer")
-	# 	logging.warning(self.byte_buffer)
-	#
-	# 	self.incoming_lines = []									#clean buffer
-	#
-	#
-	#
-
-
-
 	def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
 		logging.debug("Connect Button Clicked")  # how to determine a connection was succesful ???
 		self.button_connect.setEnabled(False)
@@ -367,19 +303,25 @@ class serial_widget(terminal_widget):
 		self.new_message_to_send.emit()  # emits signal, a new message is sent to slave.
 
 	# TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
-
 	# add here action trigger, so it can be catched by main window.
 
-
-
-	def change_serial_speed(self):  # this function is useless ATM, as the value is asked when serial open again.
+	def change_serial_speed(self):
+		"""
+		This function is useless ATM, as the value is asked when serial open again.
+		On a change on the serial speed combobox,changes the baudrate of the serial port.
+		:return:
+		"""
 		logging.debug("change_serial_speed method called")
-		text_baud = self.combo_serial_speed.currentText()
-		baudrate = int(text_baud)
-		# self.serial_port.baudrate.set(baudrate)
-		self.serial_baudrate = baudrate
+		text_baud = self.combo_serial_speed.currentText()					# gets text from combobox
+		baudrate = int(text_baud)											# convert to number
+		self.serial_baudrate = baudrate										# set baudrate. Attention!!! --> this may require reopen serial port.
 		logging.debug(text_baud)
-	def change_endline_style(self):  # this and previous method are the same, use lambdas?
+	def change_endline_style(self):
+		"""
+		This and previous method are the same, use lambdas ???
+		On a change on the endline combobox,changes variable endline used for processing strings.
+		:return:
+		"""
 		logging.debug("change_endline_speed method called")
 		endline_style = self.combo_endline_params.currentText()
 		logging.debug(endline_style)
@@ -409,6 +351,11 @@ class serial_widget(terminal_widget):
 	# not to be displayed in the widget, but called by the menus of a main window
 
 	def update_serial_ports(self):  # we update the list every time we go over the list of serial ports.
+		"""
+		Updates the list of serial ports, useful to track new devices connected.
+		Also updates the combobox with the available serial ports.
+		:return:
+		"""
 		# here we need to add an entry for each serial port avaiable at the computer
 		# 1. How to get the list of available serial ports ?
 		# self.serial_port_menu.clear()  # not existing in a monolythic widget.
@@ -437,7 +384,10 @@ class serial_widget(terminal_widget):
 			# self.noserials = self.serial_port_menu.addAction("No serial Ports detected")
 			self.noserials.setDisabled(True)
 	def get_serial_ports(self):  # REWRITE THIS FUNCTION TO USE A DICTIONARY, AND MAKE IT WAY CLEANER !!!
-
+		"""
+		Asks the OS to get the list of the currently available serial ports.
+		:return:
+		"""
 		logging.debug('Running get_serial_ports')
 		serial_port = None
 		self.serial_ports = list(
@@ -491,12 +441,16 @@ class serial_widget(terminal_widget):
 					discarded = 1
 					logging.debug("This port should be discarded!")
 					self.serial_ports.remove(port)  # removes by matching description
-	def on_port_select(self, port_name):  # callback when COM port is selected at the menu.
+	def on_port_select(self, port_name):
+		"""
+		# callback when COM port is selected at the menu.
 		# 1. get the selected port name via the text.
 		# 2. delete the old list, and regenerate it, so when we push again the com port list is updated.
 		# 3. create a thread for whatever related with the serial communication, and start running it.
 		# . open a serial communication. --> this belongs to the thread.
-
+		:param port_name: Port to be used.
+		:return:
+		"""
 		# START THE THREAD WHICH WILL BE IN CHARGE OF RECEIVING THE SERIAL DATA #
 		# self.serial_connect(port_name)
 		logging.debug("Method on_port_select called	")
@@ -652,10 +606,6 @@ class serial_widget(terminal_widget):
 		self.on_button_disconnect_click()  # resetting to the default "waiting for connect" situation
 		self.handle_errors_flag = False
 		self.error_type = None  # cleaning unhnandled errors flags.
-
-
-# 4. Initialization stuff required by the remote serial device:
-# self.init_emg_sensor()
 
 # MAIN WINDOW ##########################################################################################################
 
