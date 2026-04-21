@@ -1,7 +1,7 @@
 
 # user added #
 incoming_data.txt
-
+logfile_received.txt
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
