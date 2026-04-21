@@ -308,8 +308,13 @@ class serial_widget(terminal_widget):
 		logging.debug(self.SEPARATOR)
 
 	def on_button_send_click(self):  # do I need another thread for this ???
+		super().on_button_send_click()
 		self.send_serial()
 	def send_serial(self):  # do I need another thread for this ???
+		"""
+		Currently this method gets what to send directly from the textbox, maybe better give it as input parameter.s
+		:return:
+		"""
 		logging.debug("send_serial() method called")
 		logging.debug("Send Serial")
 		self.message_to_send = self.textbox_send_command.text()  # get what's on the textbox.
@@ -326,7 +331,7 @@ class serial_widget(terminal_widget):
 		print("serial_message_to_send")
 		print(self.message_to_send_b)
 		self.serial_port.write(self.message_to_send_b)								# binary message goes to serial port
-		self.new_message_to_send.emit()  # emits signal, a new message is sent to slave.
+		# self.new_message_to_send.emit()  # emits signal, a new message is sent to slave.
 
 	# TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
 	# add here action trigger, so it can be catched by main window.

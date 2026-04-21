@@ -33,7 +33,7 @@ import logging
 
 # from future.backports.html.parser import incomplete
 
-logging.basicConfig(level=logging.WARNING)			# enable debug messages
+logging.basicConfig(level=logging.DEBUG)			# enable debug messages
 
 
 #logging.basicConfig(level = logging.WARNING)
@@ -232,7 +232,7 @@ class terminal_widget(QWidget):
 		self.layout_log_window.addWidget(self.log_text,stretch=2)
 
 		# self.serial.new_data.connect(self.get_serial_bytes)
-		# self.new_message_to_send.connect(self.add_outgoing_lines_to_log)
+		# self.new_message_to_send.connect(self.add_outgoing_lines_to_log)		# !!! THIS IS A FIX BUT INCORRECT!
 
 		self.buttons_layout = QHBoxLayout()
 		self.layout_log_window.addLayout(self.buttons_layout)
@@ -245,15 +245,15 @@ class terminal_widget(QWidget):
 		self.buttons_layout.addWidget(self.button_clear_log)
 
 
-		print("self.log_window_flag")
-		print(self.log_window_flag)
-
-		if(self.log_window_flag == True):                           # this only works in "compilation" time.
-			self.enable_log_window()
-		elif(self.log_window_flag == False):                                                       # this only works in "compilation" time.
-			self.disable_log_window()
-		elif(self.log_window_flag == None):
-			logging.warning("SOMETHING IS QUITE FUCKED UP ON LOG_WINDOW_FLEG")
+		# logging.debug("self.log_window_flag")
+		# logging.debug(self.log_window_flag)
+		#
+		# if(self.log_window_flag == True):                           # this only works in "compilation" time.
+		# 	self.enable_log_window()
+		# elif(self.log_window_flag == False):                                                       # this only works in "compilation" time.
+		# 	self.disable_log_window()
+		# elif(self.log_window_flag == None):
+		# 	logging.warning("SOMETHING IS QUITE FUCKED UP ON LOG_WINDOW_FLAG")
 
 	#COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
 	# maybe it's interesting to consider doing it via SIGNAL TRIGGER
@@ -285,25 +285,30 @@ class terminal_widget(QWidget):
 		# READ THE DATA TO A BUFFER #
 		logging.warning("on_read_data_timer()")
 		try:
-			self.readed_bytes = self.simulate_incoming_data()
-			# self.log_window_buffer = self.readed_bytes						# until I figure out how to do it better CREATE TWO BUFFERS; ONE FOR THE LOG WINDOW AND ONE FOR THE LOG FILE
-			# self.log_file_buffer = self.readed_bytes						# until I figure out how to do it better CREATE TWO BUFFERS; ONE FOR THE LOG WINDOW AND ONE FOR THE LOG FILE
+			self.readed_bytes = self.read_data()
+			# self.log_window_buffer = self.readed_bytes
+			# self.log_file_buffer = self.readed_bytes
 			print("self.readed_bytes")
 			print(self.readed_bytes)
 		except Exception as e:
 			logging.error("couldn't read bytes from anywhere")
 		else:
 			if(self.readed_bytes):
+
+				self.new_data.emit()											# emit signal there's new data (as far as I know, unused for now)
+				self.byte_buffer = self.byte_buffer + self.readed_bytes  		# add the new readed bytes to the buffer.
+				self.log_file_buffer = self.byte_buffer							# until I figure out how to do it better CREATE TWO BUFFERS; ONE FOR THE LOG WINDOW AND ONE FOR THE LOG FILE
+				self.log_window_buffer = self.log_window_buffer					# until I figure out how to do it better CREATE TWO BUFFERS; ONE FOR THE LOG WINDOW AND ONE FOR THE LOG FILE
 				print("new input data")
-				# we could consider deleting those loggings
-				logging.debug("Chars:")
-				logging.debug(self.SEPARATOR)
-				logging.debug(self.incoming_data)
-				logging.debug(self.SEPARATOR)
-				logging.debug("Bytes:")
-				logging.debug(self.SEPARATOR)
-				logging.debug(self.readed_bytes)
-				logging.debug(self.SEPARATOR)
+				# # we could consider deleting those loggings
+				# logging.debug("Chars:")
+				# logging.debug(self.SEPARATOR)
+				# logging.debug(self.incoming_data)
+				# logging.debug(self.SEPARATOR)
+				# logging.debug("Bytes:")
+				# logging.debug(self.SEPARATOR)
+				# logging.debug(self.readed_bytes)
+				# logging.debug(self.SEPARATOR)
 
 
 				# ADD DATA TO LOG WILL HAPPEN BASED ON ITS CORRESPONDING TIMER;(THE PRINT TIMER)
@@ -328,8 +333,7 @@ class terminal_widget(QWidget):
 					# logging.debug(byte_buffer)
 					# after collecting some data on the byte buffer, store it in a static variable, and
 					# emit a signal, so another window can subscribe to it, and handle the data when needed.
-				self.new_data.emit()
-				self.byte_buffer = self.byte_buffer + self.readed_bytes  # only reading the bytes, but NO PARSING
+
 
 		logging.debug("self.readed_bytes")
 		logging.debug(self.readed_bytes)
@@ -374,7 +378,7 @@ class terminal_widget(QWidget):
 		logging.warning("add_incoming_lines_to_log() method called")
 
 		# self.parse_bytes(self.readed_bytes)                                     # parse_serial_bytes already handles the modifications over serial_data
-		self.log_text.append(self.SEPARATOR)
+		# self.log_text.append(self.SEPARATOR)		# why a separator here?
 		logging.debug("self.readed_bytes variable:")
 		logging.debug(self.readed_bytes)
 		# self.incoming_data = ""                                               # clearing variable, data is already used
@@ -386,7 +390,7 @@ class terminal_widget(QWidget):
 				self.log_text.append(l)
 		self.incoming_lines = []                                                # data is already on text_edit, not needed anymore
 
-	def add_outgoing_lines_to_log(self):
+	def add_outgoing_lines_to_log(self,line):
 		"""
 		This method is used when we need to have local echo of the sent commands
 		The current implementation is not great !!! --> find a better way to do this
@@ -398,11 +402,7 @@ class terminal_widget(QWidget):
 			logging.debug("echo flag enabled, echoing message on log window")
 			color = QColor(self.SEND_TEXT_COLOR)								# sent text goes in green
 			self.log_text.setTextColor(color)									# sent text goes in green
-			logging.debug("self.message_to_send")
-			logging.debug(self.message_to_send)
-			logging.warning("typeof self.message_to_send")
-			logging.warning(type(self.message_to_send))
-			l = "<< " + self.message_to_send									# messages sent add << in front instead of >>
+			l = "<< " + line									# messages sent add << in front instead of >>
 			self.log_text.append(l)												# add to log
 
 	# COMMON: both serial and socket have a button to save the current log #
@@ -436,6 +436,8 @@ class terminal_widget(QWidget):
 		self.button_send.setEnabled(True)
 		self.read_data_timer.start()
 		# consider also starting stopping the print_timer()
+		self.print_timer.start(self.log_window_refresh_period)
+
 
 		self.read_data_timer.start(self.read_data_timer_period)  # period needs to be relatively short
 
@@ -451,23 +453,27 @@ class terminal_widget(QWidget):
 		self.textbox_send_command.setEnabled(False)
 		self.button_send.setEnabled(False)
 		self.read_data_timer.stop()
+		# consider also starting stopping the print_timer()
+		self.print_timer.stop()
 
 
 
 
-	def on_button_send_click(self):                         # SPECIFIC depending on the type of connection
+
+	def on_button_send_click(self):                         				# SPECIFIC depending on the type of connection
 		"""
-		Dummy function to test the proper
-		functioning of the log window and other widgets.
-		On sending anything, it adds it to incoming_lines.
+		Actions to perform when the send button is pressed.
+		Get the text to be sent
+		Add it to the log window if needed
+		Add text to the self.message_to_send variable, so it is sent. 
 		:return:
 		"""
-		self.add_outgoing_lines_to_log()
-
+		self.message_to_send = self.textbox_send_command.text()				# messages to be sent happen also asynchronously # maybe better to do this with method input parameters, using class variables obfuscates its use.
+		self.add_outgoing_lines_to_log(self.message_to_send)				# outgoing messages happens asynchronously (everytime we press send button)
+		self.send_command(self.message_to_send)
 		# ONLY FOR TESTING !!!! #
 		# ECHOES ALL STRINGS SENT AS THEY WERE RECEIVED BACK #
-		self.message_to_send = self.textbox_send_command.text()		# maybe better to do this with method input parameters, using class variables obfuscates its use.
-		print("text gotten from textbox:", self.message_to_send)
+		# logging.debug("text gotten from textbox:", self.message_to_send)
 		# self.incoming_lines.append("Received text:   " + self.message_to_send)
 
 	def on_check_echo(self):
@@ -518,40 +524,44 @@ class terminal_widget(QWidget):
 	# def add_incoming_lines_to_log(self):
 	# 	pass
 
-	def simulate_incoming_data(self):
+	def read_data(self):
 		"""
-		Used to simulate incoming data, as this widget is generic
+		Used to SIMULATE incoming data, as this widget is generic
 		and no communication interface is implemented.
 		:return: fake incoming data
 		"""
-		logging.warning("simulate_incoming_data method called")
+		logging.debug("simulate_incoming_data method called")
 
 		incoming_data = b"lorem ipsum dolor"
 		incoming_data = incoming_data + b'\n'
 		incoming_data = incoming_data + b"sit amet constectetuer"
 		incoming_data = incoming_data + b'\n'
 
-		print("incoming data before:", incoming_data)
-
 		# # this is GETTING STUCK ACTUALLY not happening for whatever reason
-		jmax = random.randint(10,20)
-		imax = random.randint(10,100)
+		jmax = random.randint(2,5)
+		imax = random.randint(2,10)
 		for j in range(jmax):							# up to 20 random phrases.
-			print("j="+str(j))
+			# print("j="+str(j))
 			for i in range(imax):						# with a lenght from 10, to 100
-				print("i=" + str(i))
+				# print("i=" + str(i))
 				incoming_data = incoming_data + bytes([random.randint(ord('0'), ord('z'))])
-				print("incoming data:", incoming_data)
+				# print("incoming data:", incoming_data)
 
 			incoming_data = incoming_data + b'\n'
 
-
-
-		print("incoming data after random loop:", incoming_data)
+		# logging.debug("incoming data after random loop:", incoming_data)
 
 
 		return(incoming_data)
 
+	def send_command(self, command):
+		"""
+		SIMULATES sending the commands written on the terminal somewhere,
+		as it is useful for debugging functionality of UI.
+		:return:
+		"""
+		logging.debug("send_command() method called")
+		print("Command sent:", command)
 
 
 class MainWindow(QMainWindow):
