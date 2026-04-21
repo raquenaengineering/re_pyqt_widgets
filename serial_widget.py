@@ -176,7 +176,7 @@ class serial_widget(terminal_widget):
 		# combo endline #
 		self.combo_endline_params = QComboBox()
 		self.combo_endline_params.addItems(self.ENDLINE_OPTIONS)
-		self.combo_endline_params.setCurrentIndex(1)  # defaults to endline with NL
+		self.combo_endline_params.setCurrentIndex(3)  # defaults to endline with CR and NL (Arduino default)
 		self.combo_endline_params.currentTextChanged.connect(self.change_endline_style)
 		self.change_endline_style()  # sets the default endline style
 		self.layout_specific_connection.addWidget(self.combo_endline_params)

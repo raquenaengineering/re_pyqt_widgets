@@ -132,9 +132,8 @@ class terminal_widget(QWidget):
 	log_window_buffer = []				# contains the data which is to be printed on the log window.
 	log_file_buffer = []				# same for the data which has to be saved to file.
 
-	#endline = "\n"                      # requred to get the data properly interpreted
-	endline = b'\n'                   # probably this is a better option, but it will require some changes, fix !!!
-
+	# endline = b'\n'                   	# default endline style
+	endline = b'\r\n'
 
 	new_data = Signal()             # signal triggered when new data is available, to be used by parent widget.
 	# new_message_to_send = Signal()  # a new message is sent to the slave, used by parent to, for example log it.
@@ -331,6 +330,7 @@ class terminal_widget(QWidget):
 				# 	# SAVE TO LOGFILE #
 				# 	file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
 				# 	logging.debug("saved to file")
+				# 	file.write('\n')									# for writing to file, this may be the correct endline! ???
 				# 	file.write(self.incoming_data)
 				# 	file.write('\n')
 				# 	chars = None  # indeed there's no new information/messages.
@@ -359,10 +359,11 @@ class terminal_widget(QWidget):
 
 		if (self.save_to_log_file == True):
 			# SAVE TO LOGFILE #
-			file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
+			file = open("incoming_data.txt", 'a', newline='')  	# saving data to file.
 			logging.debug("saved to file")
 			file.write(self.incoming_data)
-			file.write('\n')
+			# file.write(self.endline)
+			file.write('\n')									# for writing to file, this may be the correct endline! ???
 			chars = None  # indeed there's no new information/messages.
 
 	def get_complete_lines(self, buffer):
@@ -558,9 +559,9 @@ class terminal_widget(QWidget):
 		if (jackpot == 0):
 
 			incoming_data = b"lorem ipsum dolor"
-			incoming_data = incoming_data + b'\n'
+			incoming_data = incoming_data + self.endline
 			incoming_data = incoming_data + b"sit amet constectetuer"
-			incoming_data = incoming_data + b'\n'
+			incoming_data = incoming_data + self.endline
 
 			# # this is GETTING STUCK ACTUALLY not happening for whatever reason
 
@@ -577,7 +578,7 @@ class terminal_widget(QWidget):
 					incoming_data = incoming_data + bytes([random.randint(ord('0'), ord('z'))])
 					# print("incoming data:", incoming_data)
 
-				incoming_data = incoming_data + b'\n'
+				incoming_data = incoming_data + self.endline
 
 			# logging.debug("incoming data after random loop:", incoming_data)
 
