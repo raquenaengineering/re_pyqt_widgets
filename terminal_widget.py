@@ -31,10 +31,7 @@ import numpy as np 									# required to handle multidimensional arrays/matrice
 
 import logging
 
-logging.basicConfig(level=logging.DEBUG)			# enable debug messages
-
-
-#logging.basicConfig(level = logging.WARNING)
+logging.basicConfig(level=logging.WARNING)			# enable debug messages
 
 # qt imports #
 from PySide6.QtWidgets import (
@@ -115,7 +112,7 @@ class terminal_widget(QWidget):
 
 	connected = False
 	message_to_send = None              # if not none, is a message to be sent via serial port
-	echo_flag = False                   # to enable/disable echoing sent messages to the log window
+	echo_flag = True                   	# to enable/disable echoing sent messages to the log window
 	timeouts = 0
 	byte_buffer = b''                   # buffer where the received bytes are stored until used.
 	readed_bytes = b''                  # bytes received in the last read
@@ -126,8 +123,8 @@ class terminal_widget(QWidget):
 	log_file_type = ".txt"              # file extension
 	log_full_path = None                # this variable will be the one used to record
 	service_timer_period = 10			# is for important things, so period is short
-	read_data_timer_period = 1000       # period in ms to read incoming data
-	log_window_refresh_period =3000     # the log windows isn't updated inmediately, but every 100ms
+	read_data_timer_period = 50       # period in ms to read incoming data
+	log_window_refresh_period =100     	# the log windows isn't updated inmediately, but every 100ms
 	incoming_data = ""                  # characters converted from readed_bytes, to be converted in lines
 	incoming_lines = []                 # contains all incoming data separated by lines, to print it on the log_window
 	save_to_log_file = True				# by default, all data written to the log window will also be dumped to a logfile.
@@ -146,9 +143,8 @@ class terminal_widget(QWidget):
 
 		super().__init__()
 
-		print("log_window")
-		print(log_window)
-
+		logging.debug("log_window")
+		logging.debug(log_window)
 
 		self.log_window_flag = log_window
 
@@ -286,26 +282,39 @@ class terminal_widget(QWidget):
 		# could also read random bullshit from a file, for example.
 
 		# READ THE DATA TO A BUFFER #
-		logging.warning("on_read_data_timer()")
+		logging.debug("on_read_data_timer()")
 		try:
 			self.readed_bytes = self.read_data()
 			# self.log_window_buffer = self.readed_bytes
 			# self.log_file_buffer = self.readed_bytes
-			print("self.readed_bytes")
-			print(self.readed_bytes)
+			logging.debug("self.readed_bytes")
+			logging.debug(self.readed_bytes)
 		except Exception as e:
 			logging.error("couldn't read bytes from anywhere")
 		else:
 			if(self.readed_bytes):
-
 				self.new_data.emit()											# emit signal there's new data (as far as I know, unused for now)
 				self.byte_buffer = self.byte_buffer + self.readed_bytes  		# add the new readed bytes to the buffer.
 				self.log_file_buffer = self.byte_buffer							# until I figure out how to do it better CREATE TWO BUFFERS; ONE FOR THE LOG WINDOW AND ONE FOR THE LOG FILE
 				self.log_window_buffer = self.log_window_buffer					# until I figure out how to do it better CREATE TWO BUFFERS; ONE FOR THE LOG WINDOW AND ONE FOR THE LOG FILE
-				print("new input data")
+				logging.debug("new input data")
 
-				self.byte_buffer, lines = self.get_complete_lines(self.byte_buffer)
-				self.add_incoming_lines_to_log(lines)
+				# self.byte_buffer, lines = self.get_complete_lines(self.byte_buffer)
+				# self.add_incoming_lines_to_log(lines)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 				# ADD DATA TO LOG WILL HAPPEN BASED ON ITS CORRESPONDING TIMER;(THE PRINT TIMER)
 				# so read and print are completely independent. Remove window print and log print from this method.
@@ -337,15 +346,16 @@ class terminal_widget(QWidget):
 		logging.debug(self.byte_buffer)
 
 	def on_print_timer(self):
-		logging.warning("on_print_timer()")
+		logging.debug("on_print_timer()")
 		# if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
 		if (self.log_window_flag == True):  # if the log window is disabled no need to do the job ???
-			print("self.log_window_flag is True")
+			logging.debug("self.log_window_flag is True")
 			self.log_window_buffer = self.log_window_buffer + [self.readed_bytes]
 			# PRINT TO LOG WINDOW -->
 			# should I keep the text printing to the log window just in case I decide to enable it interactively ???
 			# KEEP IN MIND CASE THERE IS NO ENDLINE!!!
-			self.add_incoming_lines_to_log()  # print to log window
+			self.byte_buffer, lines = self.get_complete_lines(self.byte_buffer)
+			self.add_incoming_lines_to_log(lines)
 
 		if (self.save_to_log_file == True):
 			# SAVE TO LOGFILE #
@@ -386,7 +396,7 @@ class terminal_widget(QWidget):
 
 	def add_incoming_lines_to_log(self,lines):
 		# NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
-		logging.warning("add_incoming_lines_to_log() method called")
+		logging.debug("add_incoming_lines_to_log() method called")
 
 		# self.parse_bytes(self.readed_bytes)                                     # parse_serial_bytes already handles the modifications over serial_data
 		# self.log_text.append(self.SEPARATOR)		# why a separator here?
@@ -480,7 +490,6 @@ class terminal_widget(QWidget):
 		:return:
 		"""
 		self.message_to_send = self.textbox_send_command.text()				# messages to be sent happen also asynchronously # maybe better to do this with method input parameters, using class variables obfuscates its use.
-		self.textbox_send_command.setText("")								# clean content of textbox.
 		self.add_outgoing_lines_to_log(self.message_to_send)				# outgoing messages happens asynchronously (everytime we press send button)
 		self.send_command(self.message_to_send)
 		# ONLY FOR TESTING !!!! #
@@ -543,25 +552,34 @@ class terminal_widget(QWidget):
 		:return: fake incoming data
 		"""
 		logging.debug("simulate_incoming_data method called")
+		incoming_data = b''									# defined, so it exists to return it.
+		jackpot = random.randint(0,20)						# not every time we read there is data actually.
+		logging.debug("jackpot = " + str(jackpot))
+		if (jackpot == 0):
 
-		incoming_data = b"lorem ipsum dolor"
-		incoming_data = incoming_data + b'\n'
-		incoming_data = incoming_data + b"sit amet constectetuer"
-		incoming_data = incoming_data + b'\n'
-
-		# # this is GETTING STUCK ACTUALLY not happening for whatever reason
-		jmax = random.randint(2,5)
-		imax = random.randint(2,10)
-		for j in range(jmax):							# up to 20 random phrases.
-			# print("j="+str(j))
-			for i in range(imax):						# with a lenght from 10, to 100
-				# print("i=" + str(i))
-				incoming_data = incoming_data + bytes([random.randint(ord('0'), ord('z'))])
-				# print("incoming data:", incoming_data)
-
+			incoming_data = b"lorem ipsum dolor"
+			incoming_data = incoming_data + b'\n'
+			incoming_data = incoming_data + b"sit amet constectetuer"
 			incoming_data = incoming_data + b'\n'
 
-		# logging.debug("incoming data after random loop:", incoming_data)
+			# # this is GETTING STUCK ACTUALLY not happening for whatever reason
+
+			# extra layer of randomness:
+
+			# print("JACKPOT !!!")
+
+			jmax = random.randint(2,5)
+			imax = random.randint(2,10)
+			for j in range(jmax):							# up to 20 random phrases.
+				# print("j="+str(j))
+				for i in range(imax):						# with a lenght from 10, to 100
+					# print("i=" + str(i))
+					incoming_data = incoming_data + bytes([random.randint(ord('0'), ord('z'))])
+					# print("incoming data:", incoming_data)
+
+				incoming_data = incoming_data + b'\n'
+
+			# logging.debug("incoming data after random loop:", incoming_data)
 
 
 		return(incoming_data)
@@ -570,10 +588,13 @@ class terminal_widget(QWidget):
 		"""
 		SIMULATES sending the commands written on the terminal somewhere,
 		as it is useful for debugging functionality of UI.
+		also cleans the command textbox.
 		:return:
 		"""
-		logging.debug("send_command() method called")
-		print("Command sent:", command)
+		if(command):															# if command is an empty string, do nothing
+			logging.debug("send_command() method called")
+			self.textbox_send_command.setText("")								# clean content of textbox.
+			print("Command sent:", command)
 
 
 class MainWindow(QMainWindow):
@@ -589,7 +610,6 @@ class MainWindow(QMainWindow):
 		super().__init__()
 
 		self.terminal = terminal_widget(log_window = True)
-		self.terminal.print_timer.start(self.terminal.log_window_refresh_period)
 		self.setCentralWidget(self.terminal)
 		# stylesheet, so I don't get blind with tiny characters #
 		self.sty = "QWidget {font-size: 10pt}"
