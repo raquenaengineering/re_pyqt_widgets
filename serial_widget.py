@@ -133,7 +133,7 @@ class serial_widget(terminal_widget):
 
 
 
-	def __init__(self, log_window=None):
+	def __init__(self, log_window=True):
 
 		self.log_window_flag = log_window
 		print("Log_window_flag parameter on socket_widget initialization")
@@ -189,41 +189,18 @@ class serial_widget(terminal_widget):
 		self.update_ports_timer.stop()									# enable for autoupdate of serial ports every certain time.
 
 
-	def on_read_data_timer(self):
+	def read_data(self):
 		"""
-		What this method currently does:
-		Reads data from serial port
-
-
-
-
-		(handle exceptions like port broken)
-
-
-
-
-		WHAT THIS METHOD SHOULD DO:
-			READ DATA FROM THE SERIAL PORT
-			STORE IT IN A VARIABLE WHERE ALSO OLD DATA IS
-			MAKE SURE THAT DATA IS NOT BIGGER THAN A CERTAIN SIZE
-				IF TOO MUCH DATA; SIMPLY POP ALL OLD VALUES TO MAKE PLACE FOR THE NEW
-				IF THAT DATA IS USED; DELETE IT
-			USE MEANS:
-				- IF THERE IS TERMINAL; IT IS PRINTED THERE
-				- IF THERE IS LOG; IT IS ADDED TO LOG
-				- IF SOMEONE NEEDS THAT DATA; THAT DATA HAS BEEN REQUESTED AND USED
+		Method that actually reads data from serial port
 		:return:
 		"""
-
-		# 	# READ THE DATA TO A BUFFER #
-		logging.debug("on_read_data_timer()")
 		try:
-			self.readed_bytes = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
+			incoming_data = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
 		except Exception as e:
 			self.on_port_error(e)
 			self.on_button_disconnect_click()  	# we've crashed the serial, so disconnect and REFRESH PORTS!!!
 		else:
-			if(self.readed_bytes):				# do anything actually only if there's data.
+			if(incoming_data):				# do anything actually only if there's data.
 				print("Chars:")
 				# HERE THERE IS SOMETHING MISSING !!!
 				# FIGURE OUT WHAT !!!
@@ -231,47 +208,12 @@ class serial_widget(terminal_widget):
 				# print("self.incoming_data:")
 				# print(self.incoming_data)
 				print(self.SEPARATOR)
-				print("Bytes (self.readed_bytes):")
-				print(self.readed_bytes)
+				print("Bytes (incoming_data):")
+				print(incoming_data)
 				print(self.SEPARATOR)
 
+		return(incoming_data)
 
-				# if logging.WARNING:
-				# 	logging.warning("Chars:")
-				# 	logging.warning(self.SEPARATOR)
-				# 	logging.warning(self.incoming_data)
-				# 	logging.warning(self.SEPARATOR)
-				# 	logging.warning("Bytes:")
-				# 	logging.warning(self.SEPARATOR)
-				# 	logging.warning(self.readed_bytes)
-				# 	logging.warning(self.SEPARATOR)
-				#if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
-
-				if(self.save_to_log_file == True):
-					# SAVE TO LOGFILE #
-					file = open("logfile_received.txt", 'a', newline='')  # saving data to file.
-					logging.debug("saved to file")
-					file.write(self.readed_bytes.decode("utf-8"))
-					file.write('\n')
-					chars = None  # indeed there's no new information/messages.
-
-					# logging.debug(byte_buffer)
-					# after collecting some data on the byte buffer, store it in a static variable, and
-					# emit a signal, so another window can subscribe to it, and handle the data when needed.
-					self.new_data.emit()
-					self.byte_buffer = self.byte_buffer + self.readed_bytes  # only reading the bytes, but NO PARSING
-
-
-
-				if(True):
-					# PRINT TO LOG WINDOW #
-					self.add_incoming_lines_to_log()  # print to log window
-
-
-		logging.debug("self.readed_bytes")
-		logging.debug(self.readed_bytes)
-		logging.debug("self.byte_buffer")
-		logging.debug(self.byte_buffer)
 
 	def on_button_connect_click(self):  # this button changes text to disconnect when a connection is succesful.
 		logging.debug("Connect Button Clicked")  # how to determine a connection was succesful ???
@@ -309,29 +251,29 @@ class serial_widget(terminal_widget):
 
 	def on_button_send_click(self):  # do I need another thread for this ???
 		super().on_button_send_click()
-		self.send_serial()
-	def send_serial(self):  # do I need another thread for this ???
+	def send_command(self, command):  # do I need another thread for this ???
 		"""
 		Currently this method gets what to send directly from the textbox, maybe better give it as input parameter.s
 		:return:
 		"""
-		logging.debug("send_serial() method called")
+		logging.debug("send_command() method called")
 		logging.debug("Send Serial")
+
+		super().send_command(command)
+
 		self.message_to_send = self.textbox_send_command.text()  # get what's on the textbox.
-		self.textbox_send_command.setText("")
 		# here the serial send command #
 
-		self.message_to_send_b = self.message_to_send.encode("utf-8")  							# this should have effect on the serial_thread
+		command_b = command.encode("utf-8")  						# this should have effect on the serial_thread
 		print("type of message_to_send")
-		print(type(self.message_to_send_b))
+		print(type(command_b))
 		print("type of endline")
 		print(type(self.endline))
-		self.message_to_send_b = self.message_to_send_b + self.endline
+		command_b = command_b + self.endline
 
-		print("serial_message_to_send")
-		print(self.message_to_send_b)
-		self.serial_port.write(self.message_to_send_b)								# binary message goes to serial port
-		# self.new_message_to_send.emit()  # emits signal, a new message is sent to slave.
+		print("serial_command_to_send")
+		print(command_b)
+		self.serial_port.write(command_b)								# binary message goes to serial port
 
 	# TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
 	# add here action trigger, so it can be catched by main window.
