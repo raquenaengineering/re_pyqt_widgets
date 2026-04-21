@@ -31,8 +31,6 @@ import numpy as np 									# required to handle multidimensional arrays/matrice
 
 import logging
 
-# from future.backports.html.parser import incomplete
-
 logging.basicConfig(level=logging.DEBUG)			# enable debug messages
 
 
@@ -113,6 +111,8 @@ class terminal_widget(QWidget):
 	MAX_TEXT_SIZE = 30
 	MIN_TEXT_SIZE = 5
 
+	MAX_BYTE_BUFFER_SIZE = 100000		# if bytebuffer exceeds this size without doing anything with the data, throws error and trims old data in buffer.
+
 	connected = False
 	message_to_send = None              # if not none, is a message to be sent via serial port
 	echo_flag = False                   # to enable/disable echoing sent messages to the log window
@@ -156,7 +156,7 @@ class terminal_widget(QWidget):
 		self.service_timer = QTimer()  									# for periodic checks, like buffers getting too big.
 		self.service_timer.timeout.connect(self.on_service_timer)
 		self.service_timer.start(self.service_timer_period)  # period needs to be relatively short
-		self.service_timer.stop()  # by default the timer will be off, enabled by connect.
+		# self.service_timer.stop()  # by default the timer will be off, enabled by connect.
 
 
 		# data timer #
@@ -266,9 +266,12 @@ class terminal_widget(QWidget):
 		byte_buffer GETTING TOO BIG1
 		:return:
 		"""
-		logging.debug("on_service_timer()")
+		# logging.debug("on_service_timer()")
+		if(len(self.byte_buffer) > self.MAX_BYTE_BUFFER_SIZE):
+			logging.error("byte buffer full")
+			self.byte_buffer = self.byte_buffer[:self.MAX_BYTE_BUFFER_SIZE/2]
 		if(len(self.log_window_buffer) > 100000):
-			logging.error("log_window_buffer got too big")
+			logging.error("log_window_buffer full")
 
 
 	def on_read_data_timer(self):
@@ -300,16 +303,9 @@ class terminal_widget(QWidget):
 				self.log_file_buffer = self.byte_buffer							# until I figure out how to do it better CREATE TWO BUFFERS; ONE FOR THE LOG WINDOW AND ONE FOR THE LOG FILE
 				self.log_window_buffer = self.log_window_buffer					# until I figure out how to do it better CREATE TWO BUFFERS; ONE FOR THE LOG WINDOW AND ONE FOR THE LOG FILE
 				print("new input data")
-				# # we could consider deleting those loggings
-				# logging.debug("Chars:")
-				# logging.debug(self.SEPARATOR)
-				# logging.debug(self.incoming_data)
-				# logging.debug(self.SEPARATOR)
-				# logging.debug("Bytes:")
-				# logging.debug(self.SEPARATOR)
-				# logging.debug(self.readed_bytes)
-				# logging.debug(self.SEPARATOR)
 
+				self.byte_buffer, lines = self.get_complete_lines(self.byte_buffer)
+				self.add_incoming_lines_to_log(lines)
 
 				# ADD DATA TO LOG WILL HAPPEN BASED ON ITS CORRESPONDING TIMER;(THE PRINT TIMER)
 				# so read and print are completely independent. Remove window print and log print from this method.
@@ -348,6 +344,7 @@ class terminal_widget(QWidget):
 			self.log_window_buffer = self.log_window_buffer + [self.readed_bytes]
 			# PRINT TO LOG WINDOW -->
 			# should I keep the text printing to the log window just in case I decide to enable it interactively ???
+			# KEEP IN MIND CASE THERE IS NO ENDLINE!!!
 			self.add_incoming_lines_to_log()  # print to log window
 
 		if (self.save_to_log_file == True):
@@ -358,6 +355,20 @@ class terminal_widget(QWidget):
 			file.write('\n')
 			chars = None  # indeed there's no new information/messages.
 
+	def get_complete_lines(self, buffer):
+		if not buffer:
+			return b'', []
+
+		data_lines = buffer.split(self.endline)
+
+		incomplete_line = data_lines[-1]
+		complete_lines = [
+			line.decode("utf-8", errors="ignore")
+			for line in data_lines[:-1]
+			if line != b''
+		]
+
+		return incomplete_line, complete_lines
 
 	def enable_log_window(self):
 		print("enable_log_window method called")
@@ -373,7 +384,7 @@ class terminal_widget(QWidget):
 		self.button_save_log.setVisible(False)
 		self.button_clear_log.setVisible(False)
 
-	def add_incoming_lines_to_log(self):
+	def add_incoming_lines_to_log(self,lines):
 		# NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
 		logging.warning("add_incoming_lines_to_log() method called")
 
@@ -382,7 +393,7 @@ class terminal_widget(QWidget):
 		logging.debug("self.readed_bytes variable:")
 		logging.debug(self.readed_bytes)
 		# self.incoming_data = ""                                               # clearing variable, data is already used
-		for line in self.incoming_lines:
+		for line in lines:
 			if(line != ''):                                                     # do nothing in case of empty string
 				color = QColor(self.RECEIVE_TEXT_COLOR)
 				self.log_text.setTextColor(color)
@@ -469,6 +480,7 @@ class terminal_widget(QWidget):
 		:return:
 		"""
 		self.message_to_send = self.textbox_send_command.text()				# messages to be sent happen also asynchronously # maybe better to do this with method input parameters, using class variables obfuscates its use.
+		self.textbox_send_command.setText("")								# clean content of textbox.
 		self.add_outgoing_lines_to_log(self.message_to_send)				# outgoing messages happens asynchronously (everytime we press send button)
 		self.send_command(self.message_to_send)
 		# ONLY FOR TESTING !!!! #
@@ -568,7 +580,6 @@ class MainWindow(QMainWindow):
 	# class variables #
 	serial_bytes = b''                          # here we store what we get from serial port (get_byte_buffer)
 	serial_data = ""                            # here the processed message(s) after parsing are stored
-	#serial_lines = []                           # the serial data could contain several lines, this variable holds them.
 	font_size = 10
 
 
