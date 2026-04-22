@@ -21,46 +21,46 @@ logging.basicConfig(level=logging.WARNING)			# enable debug messages
 
 # qt imports #
 from PySide6.QtWidgets import (
-	QApplication,
-	QMainWindow,
-	QVBoxLayout,
-	QHBoxLayout,
-	QLabel,
-	QComboBox,
-	QLineEdit,
-	QPushButton,
-	QMenuBar,
-	QToolBar,
-	QStatusBar,
-	QDialog,
+    QApplication,
+    QMainWindow,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QComboBox,
+    QLineEdit,
+    QPushButton,
+    QMenuBar,
+    QToolBar,
+    QStatusBar,
+    QDialog,
     QFileDialog,
-	QMessageBox,														# Dialog with extended functionality.
-	QCheckBox,
+    QMessageBox,														# Dialog with extended functionality.
+    QCheckBox,
 
-	QSystemTrayIcon,
-	QTextEdit,
-	QMenu,
-	QWidget
+    QSystemTrayIcon,
+    QTextEdit,
+    QMenu,
+    QWidget
 )
 
 from PySide6.QtGui import (
-	QIcon,
-	QKeySequence,
+    QIcon,
+    QKeySequence,
     QColor,
-	QShortcut,
-	QAction,
-	QFont
+    QShortcut,
+    QAction,
+    QFont
 )
 
 from PySide6.QtCore import(
-	Qt,
-	QThreadPool,
-	QRunnable,
-	QObject,
-	QSize,
-	Signal,															# those two are pyqt specific.
-	Slot,
-	QTimer																# nasty stuff
+    Qt,
+    QThreadPool,
+    QRunnable,
+    QObject,
+    QSize,
+    Signal,															# those two are pyqt specific.
+    Slot,
+    QTimer																# nasty stuff
 )
 
 # custom imports #
@@ -88,21 +88,17 @@ LOG_WINDOW_REFRESH_PERIOD_MS = 100                                      # maybe 
 
 #DEFAULT_IP = "172.17.235.151"
 #DEFAULT_IP = "172.17.235.144"
-DEFAULT_IP = "192.168.0.6"
+DEFAULT_IP = "192.168.0.49"
 
-DEFAULT_PORT = 8051
-
+DEFAULT_PORT = 50001
 SEPARATOR = "----------------------------------------------------------"
 
 class socket_widget(terminal_widget):
 
-
+    CONNECTION_TIMEOUT_S = 3
     ip_address = None                                                                       # ip address of the remote device to be used
     port = None                                                                             # port to connect to
     socket = None                                                                           # socket object used to create the connection
-
-    #sock_message_to_send = None
-
     echo_flag = False
 
     def __init__(self, log_window = None):
@@ -176,6 +172,25 @@ class socket_widget(terminal_widget):
                     chars = None                                                        # indeed there's no new information/messages.
 
 
+
+
+    def connect():
+        """
+        Handles connection process
+        :return:
+        """
+        # conecting the socket #
+        try:
+            self.socket = socket.socket()
+            self.socket.connect((self.ip_address, self.port))
+            self.socket.settimeout(
+                self.CONNECTION_TIMEOUT_S)  # very important TO KNOW IF SOCKET IS DEAD !!! 10s is probably a big and conservative value ATM.
+
+        except:
+            logging.exception("The socket couldn't connect")
+        else:
+            logging.debug("Socket connected")
+
     def on_button_connect_click(self):
         # get the ip and the port from the text fields, to use it to connect the socket #
         self.ip_address = self.textbox_ip.text()
@@ -183,25 +198,13 @@ class socket_widget(terminal_widget):
         self.port = int(self.textbox_port.text())
         print(self.port)
 
-        # conecting the socket #
-        try:
-            self.socket = socket.socket()
-            self.socket.connect((self.ip_address,self.port))
-            self.socket.settimeout(5)                                               # very important TO KNOW IF SOCKET IS DEAD !!! 10s is probably a big and conservative value ATM.
-
-        except:
-            logging.exception("The socket couldn't connect")
-        else:
-            logging.debug("Socket connected")
+        self.connect
 
         # enabling a timer to read in the incoming data of the socket #
         self.read_data_timer.start()
 
         # UI changes #
-        self.button_connect.setEnabled(False)
-        self.button_disconnect.setEnabled(True)
-        self.textbox_send_command.setEnabled(True)
-        self.button_send.setEnabled(True)
+        super().on_button_connect_click()											# mostly ui related
 
     def on_button_disconnect_click(self):
         # critical stuff to stop #
@@ -213,13 +216,7 @@ class socket_widget(terminal_widget):
         self.port = None
         self.socket = None                                  #if not closing the socket first, the app crashes
         # updating UI to current state #
-        self.button_disconnect.setEnabled(False)
-        self.button_connect.setEnabled(True)
-        self.textbox_send_command.setEnabled(False)
-        self.textbox_send_command.clear()
-        self.textbox_send_command.clear()
-        self.button_send.setEnabled(False)
-
+        super().on_button_disconnect_click()
 
 
 
@@ -227,6 +224,9 @@ class socket_widget(terminal_widget):
 
     def save_ip(self):
         pass
+
+
+
 
     def on_button_send_click(self):  # do I need another thread for this ???
         logging.debug("on_button_send_click() method called")
@@ -330,5 +330,5 @@ if __name__ == '__main__':
     app.setStyle("Fusion")  # required to use it here
     window = MainWindow()
     window.show()
-    app.exec_()
+    app.exec()
 
