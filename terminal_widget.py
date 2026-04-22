@@ -314,8 +314,8 @@ class terminal_widget(QWidget):
 	def on_print_timer(self):
 		# logging.error("on_print_timer()")
 		# if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
-		logging.error("log_window_flag");
-		logging.error(self.log_window_flag)
+		logging.debug("log_window_flag");
+		logging.debug(self.log_window_flag)
 		if (self.log_window_flag == True):  # if the log window is disabled no need to do the job ???
 			logging.debug("self.log_window_flag is True")
 			self.log_window_buffer = self.log_window_buffer + [self.readed_bytes]

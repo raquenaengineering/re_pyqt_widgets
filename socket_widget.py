@@ -132,51 +132,73 @@ class socket_widget(terminal_widget):
 		self.textbox_port.setEnabled(True)						                    # not enabled until serial port is connected.
 		self.layout_specific_connection.addWidget(self.textbox_port)
 
-
 	def connect(self):
-		"""
-		Handles connection process
-		:return:
-		"""
-		# conecting the socket #
 		try:
 			self.socket = socket.socket()
-			print(self.socket)
-			print(type(self.ip_address))
-			print(self.ip_address)
-			print(type(self.port))
-			print(self.port)
-			self.socket.settimeout(
-				self.CONNECTION_TIMEOUT_S)  # very important TO KNOW IF SOCKET IS DEAD !!! 10s is probably a big and conservative value ATM.
-			try:
-				self.socket.connect((self.ip_address, self.port))
-			except:
-				logging.error("Connection failed")
-				self.on_button_disconnect_click()
-
-			# time.sleep(self.CONNECTION_TIMEOUT_S)
-		except:
+			self.socket.connect((self.ip_address, self.port))
+			self.socket.setblocking(False)
+		except Exception as e:
 			logging.exception("The socket couldn't connect")
+			self.socket = None
+			return False
 		else:
 			logging.debug("Socket connected")
-			# self.connect()						# unimplemented
+			return True
 
-			# enabling a timer to read in the incoming data of the socket #
-			self.read_data_timer.start()
+	# def connect(self):
+	# 	"""
+	# 	Handles connection process
+	# 	:return:
+	# 	"""
+	# 	# conecting the socket #
+	# 	try:
+	# 		self.socket = socket.socket()
+	# 		self.socket.setblocking(False) 					# no need to fill in the buffer to return from recv(), will return whatever.
+	# 		print(self.socket)
+	# 		print(type(self.ip_address))
+	# 		print(self.ip_address)
+	# 		print(type(self.port))
+	# 		print(self.port)
+	# 		# self.socket.settimeout(
+	# 		# 	self.CONNECTION_TIMEOUT_S)  # very important TO KNOW IF SOCKET IS DEAD !!! 10s is probably a big and conservative value ATM.
+	# 		try:
+	# 			self.socket.connect((self.ip_address, self.port))
+	# 		except:
+	# 			logging.error("Connection failed")
+	# 			self.on_button_disconnect_click()
+	#
+	# 		# time.sleep(self.CONNECTION_TIMEOUT_S)
+	# 	except:
+	# 		logging.exception("The socket couldn't connect")
+	# 	else:
+	# 		logging.debug("Socket connected")
+	# 		# self.connect()						# unimplemented
+	#
+	# 		# enabling a timer to read in the incoming data of the socket #
+	# 		self.read_data_timer.start()
 
 	def on_button_connect_click(self):
-		# get the ip and the port from the text fields, to use it to connect the socket #
 		self.ip_address = self.textbox_ip.text()
-		print(self.ip_address)
 		self.port = int(self.textbox_port.text())
-		print(self.port)
 
-		self.connect()
+		connected = self.connect()
+		if  connected:
+			super().on_button_connect_click()
 
-		self.print_timer.start()
 
-		# UI changes #
-		super().on_button_connect_click()											# mostly ui related
+	# def on_button_connect_click(self):
+	# 	# get the ip and the port from the text fields, to use it to connect the socket #
+	# 	self.ip_address = self.textbox_ip.text()
+	# 	print(self.ip_address)
+	# 	self.port = int(self.textbox_port.text())
+	# 	print(self.port)
+	#
+	# 	self.connect()
+	#
+	# 	self.print_timer.start()
+	#
+	# 	# UI changes #
+	# 	super().on_button_connect_click()											# mostly ui related
 
 	def on_button_disconnect_click(self):
 		# critical stuff to stop #
@@ -228,26 +250,22 @@ class socket_widget(terminal_widget):
 		Method that actually reads data from serial port
 		:return:
 		"""
-
-		incoming_data = b'' 									# empty string, so at least something is returned
+		if self.socket is None:
+			return b''
 		try:
-			# logging.error("About to read incoming data")
-			incoming_data = self.socket.recv(self.READ_BLOCK_SIZE)  # up to 1000 or as much as in buffer.
-			# logging.warning("incoming_data:")
-			# logging.warning(incoming_data)
+			incoming_data = self.socket.recv(self.READ_BLOCK_SIZE)
+		except BlockingIOError:
+			return b''
 		except Exception as e:
-			self.on_port_error(e)
-			self.on_button_disconnect_click()  	# we've crashed the serial, so disconnect and REFRESH PORTS!!!
-		else:
-			if(incoming_data):				# do anything actually only if there's data.
-				logging.debug(self.SEPARATOR)
-				logging.debug("Bytes (incoming_data):")
-				logging.debug(incoming_data)
-				logging.debug(self.SEPARATOR)
+			logging.error(e)
+			self.on_button_disconnect_click()
+			return b''
 
-		return(incoming_data)
+		if not incoming_data:
+			self.on_button_disconnect_click()
+			return b''
 
-
+		return incoming_data
 
 	def ping_sweep(self):
 		import pythonping as ping
