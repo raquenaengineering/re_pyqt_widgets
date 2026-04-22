@@ -109,6 +109,7 @@ class terminal_widget(QWidget):
 	MIN_TEXT_SIZE = 5
 
 	MAX_BYTE_BUFFER_SIZE = 100000		# if bytebuffer exceeds this size without doing anything with the data, throws error and trims old data in buffer.
+	READ_BLOCK_SIZE = 1000				# how big is the block to be read at once from a given input device.
 
 	connected = False
 	message_to_send = None              # if not none, is a message to be sent via serial port
@@ -284,7 +285,7 @@ class terminal_widget(QWidget):
 		# could also read random bullshit from a file, for example.
 
 		# READ THE DATA TO A BUFFER #
-		logging.debug("on_read_data_timer()")
+		logging.error("on_read_data_timer()")
 		try:
 			self.readed_bytes = self.read_data()
 			# self.log_window_buffer = self.readed_bytes
@@ -303,32 +304,6 @@ class terminal_widget(QWidget):
 
 				# self.byte_buffer, lines = self.get_complete_lines(self.byte_buffer)
 				# self.add_incoming_lines_to_log(lines)
-
-
-				# ADD DATA TO LOG WILL HAPPEN BASED ON ITS CORRESPONDING TIMER;(THE PRINT TIMER)
-				# so read and print are completely independent. Remove window print and log print from this method.
-
-				# # if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
-				# if (self.log_window_flag == True):				# if the log window is disabled no need to do the job ???
-				# 	print("self.log_window_flag is True")
-				# 	self.log_window_buffer = self.log_window_buffer + [self.readed_bytes]
-				# 	# PRINT TO LOG WINDOW -->
-				# 	# should I keep the text printing to the log window just in case I decide to enable it interactively ???
-				# 	self.add_incoming_lines_to_log()  # print to log window
-
-				# if (self.save_to_log_file == True):
-				# 	# SAVE TO LOGFILE #
-				# 	file = open("incoming_data.txt", 'a', newline='')  # saving data to file.
-				# 	logging.debug("saved to file")
-				# 	file.write('\n')									# for writing to file, this may be the correct endline! ???
-				# 	file.write(self.incoming_data)
-				# 	file.write('\n')
-				# 	chars = None  # indeed there's no new information/messages.
-
-					# logging.debug(byte_buffer)
-					# after collecting some data on the byte buffer, store it in a static variable, and
-					# emit a signal, so another window can subscribe to it, and handle the data when needed.
-
 
 		logging.debug("self.readed_bytes")
 		logging.debug(self.readed_bytes)
@@ -500,6 +475,7 @@ class terminal_widget(QWidget):
 		self.message_to_send = self.textbox_send_command.text()				# messages to be sent happen also asynchronously # maybe better to do this with method input parameters, using class variables obfuscates its use.
 		self.add_outgoing_lines_to_log(self.message_to_send)				# outgoing messages happens asynchronously (everytime we press send button)
 		self.send_command(self.message_to_send)
+		self.textbox_send_command.clear()
 		# ONLY FOR TESTING !!!! #
 		# ECHOES ALL STRINGS SENT AS THEY WERE RECEIVED BACK #
 		# logging.debug("text gotten from textbox:", self.message_to_send)

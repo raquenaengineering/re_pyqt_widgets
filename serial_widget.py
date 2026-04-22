@@ -84,7 +84,7 @@ except:
 class serial_widget(terminal_widget):
 
 	# class constants #
-	SERIAL_BUFFER_SIZE = 2000  # buffer size to store the incoming data from serial, to afterwards process it.
+	# SERIAL_BUFFER_SIZE = 2000  # buffer size to store the incoming data from serial, to afterwards process it.
 	SERIAL_SPEEDS = [
 		"300",
 		"1200",
@@ -195,7 +195,7 @@ class serial_widget(terminal_widget):
 		:return:
 		"""
 		try:
-			incoming_data = self.serial_port.read(self.SERIAL_BUFFER_SIZE)  # up to 1000 or as much as in buffer.
+			incoming_data = self.serial_port.read(self.READ_BLOCK_SIZE)  # up to 1000 or as much as in buffer.
 		except Exception as e:
 			self.on_port_error(e)
 			self.on_button_disconnect_click()  	# we've crashed the serial, so disconnect and REFRESH PORTS!!!
@@ -255,19 +255,19 @@ class serial_widget(terminal_widget):
 
 		super().send_command(command)
 
-		self.message_to_send = self.textbox_send_command.text()  # get what's on the textbox.
+		self.message_to_send = self.textbox_send_command.text()  # get what's on the textbox. ---> this can also go to super() ???
 		# here the serial send command #
 
-		command_b = command.encode("utf-8")  						# this should have effect on the serial_thread
+		command_b = command.encode("utf-8")  						# this should have effect on the serial_thread super ???
 		logging.debug("type of message_to_send")
 		logging.debug(type(command_b))
 		logging.debug("type of endline")
 		logging.debug(type(self.endline))
 		command_b = command_b + self.endline
-
 		logging.debug("serial_command_to_send")
 		logging.debug(command_b)
-		self.serial_port.write(command_b)								# binary message goes to serial port
+
+		self.serial_port.write(command_b)								# binary message goes to serial port --> this is the only real specific implementation !!!! --> everything else can go to terminal widget !!!
 
 	# TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
 	# add here action trigger, so it can be catched by main window.
