@@ -118,7 +118,7 @@ class terminal_widget(QWidget):
 	byte_buffer = b''                   # buffer where the received bytes are stored until used.
 	readed_bytes = b''                  # bytes received in the last read
 	recording = False                   # flag to start/stop recording.
-	log_window_flag = False             # when True, shows the reception log window, clear and save buttons, if not, means the data will be handled in a different way.
+	log_window_flag = True             	# when True, shows the reception log window, clear and save buttons, if not, means the data will be handled in a different way.
 	log_folder = "logs"                 # in the beginning, log folder, path and filename are fixed
 	log_file_name = "log_file"          # all communication in and out (could be) collected here.
 	log_file_type = ".txt"              # file extension
@@ -268,7 +268,8 @@ class terminal_widget(QWidget):
 		# logging.debug("on_service_timer()")
 		if(len(self.byte_buffer) > self.MAX_BYTE_BUFFER_SIZE):
 			logging.error("byte buffer full")
-			self.byte_buffer = self.byte_buffer[:self.MAX_BYTE_BUFFER_SIZE/2]
+			logging.error("MAX_BYTE_BUFFER_SIZE:" + str(self.MAX_BYTE_BUFFER_SIZE))
+			self.byte_buffer = self.byte_buffer[:self.MAX_BYTE_BUFFER_SIZE//2]											# // means integer division, or it will spit a float
 		if(len(self.log_window_buffer) > 100000):
 			logging.error("log_window_buffer full")
 
@@ -285,7 +286,7 @@ class terminal_widget(QWidget):
 		# could also read random bullshit from a file, for example.
 
 		# READ THE DATA TO A BUFFER #
-		logging.error("on_read_data_timer()")
+		# logging.error("on_read_data_timer()")
 		try:
 			self.readed_bytes = self.read_data()
 			# self.log_window_buffer = self.readed_bytes
@@ -311,8 +312,10 @@ class terminal_widget(QWidget):
 		logging.debug(self.byte_buffer)
 
 	def on_print_timer(self):
-		logging.debug("on_print_timer()")
+		# logging.error("on_print_timer()")
 		# if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
+		logging.error("log_window_flag");
+		logging.error(self.log_window_flag)
 		if (self.log_window_flag == True):  # if the log window is disabled no need to do the job ???
 			logging.debug("self.log_window_flag is True")
 			self.log_window_buffer = self.log_window_buffer + [self.readed_bytes]
