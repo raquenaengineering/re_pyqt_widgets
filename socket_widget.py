@@ -101,7 +101,7 @@ class socket_widget(terminal_widget):
 	socket = None                                                                           # socket object used to create the connection
 	echo_flag = False
 
-	def __init__(self, log_window = None):
+	def __init__(self, log_window = True):
 
 		self.log_window_flag = log_window
 		print("Log_window_flag parameter on socket_widget initialization")
@@ -230,20 +230,20 @@ class socket_widget(terminal_widget):
 		"""
 
 		incoming_data = b'' 									# empty string, so at least something is returned
-		# try:
-		logging.error("About to read incoming data")
-		incoming_data = self.socket.read(self.READ_BLOCK_SIZE)  # up to 1000 or as much as in buffer.
-		print("incoming_data:")
-		print(incoming_data)
-		# except Exception as e:
-		# self.on_port_error(e)
-		self.on_button_disconnect_click()  	# we've crashed the serial, so disconnect and REFRESH PORTS!!!
-		# else:
-		if(incoming_data):				# do anything actually only if there's data.
-			logging.debug(self.SEPARATOR)
-			logging.debug("Bytes (incoming_data):")
-			logging.debug(incoming_data)
-			logging.debug(self.SEPARATOR)
+		try:
+			# logging.error("About to read incoming data")
+			incoming_data = self.socket.recv(self.READ_BLOCK_SIZE)  # up to 1000 or as much as in buffer.
+			# logging.warning("incoming_data:")
+			# logging.warning(incoming_data)
+		except Exception as e:
+			self.on_port_error(e)
+			self.on_button_disconnect_click()  	# we've crashed the serial, so disconnect and REFRESH PORTS!!!
+		else:
+			if(incoming_data):				# do anything actually only if there's data.
+				logging.debug(self.SEPARATOR)
+				logging.debug("Bytes (incoming_data):")
+				logging.debug(incoming_data)
+				logging.debug(self.SEPARATOR)
 
 		return(incoming_data)
 
