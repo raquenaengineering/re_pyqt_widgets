@@ -132,10 +132,13 @@ class terminal_widget(QWidget):
 	log_window_buffer = []				# contains the data which is to be printed on the log window.
 	log_file_buffer = []				# same for the data which has to be saved to file.
 
-	# endline = b'\n'                   	# default endline style
+	# endline = b'\n'                   # default endline style
 	endline = b'\r\n'
 
-	new_data = Signal()             # signal triggered when new data is available, to be used by parent widget.
+	new_data = Signal()             	# signal triggered when new data is available, to be used by parent widget.
+	new_lines = Signal(list)
+	connected_signal = Signal()			# other widgets need to know about the status of the connetion.
+	disconnected_signal = Signal()
 	# new_message_to_send = Signal()  # a new message is sent to the slave, used by parent to, for example log it.
 
 	def __init__(self, log_window = False):
@@ -302,19 +305,6 @@ class terminal_widget(QWidget):
 				# self.add_incoming_lines_to_log(lines)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 				# ADD DATA TO LOG WILL HAPPEN BASED ON ITS CORRESPONDING TIMER;(THE PRINT TIMER)
 				# so read and print are completely independent. Remove window print and log print from this method.
 
@@ -355,8 +345,9 @@ class terminal_widget(QWidget):
 			# should I keep the text printing to the log window just in case I decide to enable it interactively ???
 			# KEEP IN MIND CASE THERE IS NO ENDLINE!!!
 			self.byte_buffer, lines = self.get_complete_lines(self.byte_buffer)
-			self.add_incoming_lines_to_log(lines)
-
+			if lines:													# only if there are new lines, of course.
+				self.new_lines.emit(lines)								# emits a signal to catch it from other widgets.
+				self.add_incoming_lines_to_log(lines)					# add lines to log
 		if (self.save_to_log_file == True):
 			# SAVE TO LOGFILE #
 			file = open("incoming_data.txt", 'a', newline='')  	# saving data to file.
@@ -365,6 +356,21 @@ class terminal_widget(QWidget):
 			# file.write(self.endline)
 			file.write('\n')									# for writing to file, this may be the correct endline! ???
 			chars = None  # indeed there's no new information/messages.
+
+	def on_connected(self):
+		"""
+		Actions to be performed when connection is established
+		:return:
+		"""
+		self.connected_signal.emit()
+
+	def on_disconnected(self):
+		"""
+		Actions to be performed when connection is closed
+		pass
+		:return:
+		"""
+		self.disconnected_signal.emit()
 
 	def get_complete_lines(self, buffer):
 		if not buffer:
@@ -459,7 +465,7 @@ class terminal_widget(QWidget):
 		self.read_data_timer.start()
 		# consider also starting stopping the print_timer()
 		self.print_timer.start(self.log_window_refresh_period)
-
+		self.on_connected()
 
 		self.read_data_timer.start(self.read_data_timer_period)  # period needs to be relatively short
 
@@ -477,6 +483,7 @@ class terminal_widget(QWidget):
 		self.read_data_timer.stop()
 		# consider also starting stopping the print_timer()
 		self.print_timer.stop()
+		self.on_disconnected()
 
 
 
@@ -595,7 +602,7 @@ class terminal_widget(QWidget):
 		if(command):															# if command is an empty string, do nothing
 			logging.debug("send_command() method called")
 			self.textbox_send_command.setText("")								# clean content of textbox.
-			print("Command sent:", command)
+			logging.debug("Command sent:", command)
 
 
 class MainWindow(QMainWindow):

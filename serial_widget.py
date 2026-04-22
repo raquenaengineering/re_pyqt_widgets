@@ -201,16 +201,10 @@ class serial_widget(terminal_widget):
 			self.on_button_disconnect_click()  	# we've crashed the serial, so disconnect and REFRESH PORTS!!!
 		else:
 			if(incoming_data):				# do anything actually only if there's data.
-				print("Chars:")
-				# HERE THERE IS SOMETHING MISSING !!!
-				# FIGURE OUT WHAT !!!
-				print(self.SEPARATOR)
-				# print("self.incoming_data:")
-				# print(self.incoming_data)
-				print(self.SEPARATOR)
-				print("Bytes (incoming_data):")
-				print(incoming_data)
-				print(self.SEPARATOR)
+				logging.debug(self.SEPARATOR)
+				logging.debug("Bytes (incoming_data):")
+				logging.debug(incoming_data)
+				logging.debug(self.SEPARATOR)
 
 		return(incoming_data)
 
@@ -265,14 +259,14 @@ class serial_widget(terminal_widget):
 		# here the serial send command #
 
 		command_b = command.encode("utf-8")  						# this should have effect on the serial_thread
-		print("type of message_to_send")
-		print(type(command_b))
-		print("type of endline")
-		print(type(self.endline))
+		logging.debug("type of message_to_send")
+		logging.debug(type(command_b))
+		logging.debug("type of endline")
+		logging.debug(type(self.endline))
 		command_b = command_b + self.endline
 
-		print("serial_command_to_send")
-		print(command_b)
+		logging.debug("serial_command_to_send")
+		logging.debug(command_b)
 		self.serial_port.write(command_b)								# binary message goes to serial port
 
 	# TRIGGER THE SIGNAL A MESSAGE IS SENT --> SO WE CAN GET THE MESSAGE ON THE LOG WINDOW.
