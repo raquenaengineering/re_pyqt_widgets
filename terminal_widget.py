@@ -110,6 +110,7 @@ class terminal_widget(QWidget):
 
 	MAX_BYTE_BUFFER_SIZE = 100000		# if bytebuffer exceeds this size without doing anything with the data, throws error and trims old data in buffer.
 	READ_BLOCK_SIZE = 1000				# how big is the block to be read at once from a given input device.
+	MAX_LINES_LOG_WINDOW = 2000			# maximum number of lines on log window, when limit reached old get discarded.
 
 	connected = False
 	message_to_send = None              # if not none, is a message to be sent via serial port
@@ -225,6 +226,7 @@ class terminal_widget(QWidget):
 		self.layout_log_window = QVBoxLayout()
 		self.layout_main.addLayout(self.layout_log_window, stretch=2)		# stretch doesn't work...
 		self.log_text = QTextEdit()
+		self.log_text.document().setMaximumBlockCount(self.MAX_LINES_LOG_WINDOW)	# makes sure there's a limit of lines in the log window
 		self.log_text.setMinimumHeight(40)
 		self.log_text.setFontPointSize(10)
 		self.log_text.setReadOnly(True)
