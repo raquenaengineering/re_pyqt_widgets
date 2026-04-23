@@ -95,7 +95,7 @@ SEPARATOR = "----------------------------------------------------------"
 
 class socket_widget(terminal_widget):
 
-	CONNECTION_TIMEOUT_S = 10
+	CONNECTION_TIMEOUT_S = 3
 	ip_address = None                                                                       # ip address of the remote device to be used
 	port = None                                                                             # port to connect to
 	socket = None                                                                           # socket object used to create the connection
@@ -135,47 +135,20 @@ class socket_widget(terminal_widget):
 	def connect(self):
 		try:
 			self.socket = socket.socket()
+			self.socket.settimeout(self.CONNECTION_TIMEOUT_S)
 			self.socket.connect((self.ip_address, self.port))
 			self.socket.setblocking(False)
 		except Exception as e:
-			logging.exception("The socket couldn't connect")
+			# logging.exception("The socket couldn't connect")
 			self.socket = None
+			self.error_type = 1
+			self.handle_comm_errors(self.error_type)
 			return False
 		else:
 			logging.debug("Socket connected")
 			return True
 
-	# def connect(self):
-	# 	"""
-	# 	Handles connection process
-	# 	:return:
-	# 	"""
-	# 	# conecting the socket #
-	# 	try:
-	# 		self.socket = socket.socket()
-	# 		self.socket.setblocking(False) 					# no need to fill in the buffer to return from recv(), will return whatever.
-	# 		print(self.socket)
-	# 		print(type(self.ip_address))
-	# 		print(self.ip_address)
-	# 		print(type(self.port))
-	# 		print(self.port)
-	# 		# self.socket.settimeout(
-	# 		# 	self.CONNECTION_TIMEOUT_S)  # very important TO KNOW IF SOCKET IS DEAD !!! 10s is probably a big and conservative value ATM.
-	# 		try:
-	# 			self.socket.connect((self.ip_address, self.port))
-	# 		except:
-	# 			logging.error("Connection failed")
-	# 			self.on_button_disconnect_click()
-	#
-	# 		# time.sleep(self.CONNECTION_TIMEOUT_S)
-	# 	except:
-	# 		logging.exception("The socket couldn't connect")
-	# 	else:
-	# 		logging.debug("Socket connected")
-	# 		# self.connect()						# unimplemented
-	#
-	# 		# enabling a timer to read in the incoming data of the socket #
-	# 		self.read_data_timer.start()
+
 
 	def on_button_connect_click(self):
 		self.ip_address = self.textbox_ip.text()
@@ -186,19 +159,7 @@ class socket_widget(terminal_widget):
 			super().on_button_connect_click()
 
 
-	# def on_button_connect_click(self):
-	# 	# get the ip and the port from the text fields, to use it to connect the socket #
-	# 	self.ip_address = self.textbox_ip.text()
-	# 	print(self.ip_address)
-	# 	self.port = int(self.textbox_port.text())
-	# 	print(self.port)
-	#
-	# 	self.connect()
-	#
-	# 	self.print_timer.start()
-	#
-	# 	# UI changes #
-	# 	super().on_button_connect_click()											# mostly ui related
+
 
 	def on_button_disconnect_click(self):
 		# critical stuff to stop #
@@ -266,6 +227,31 @@ class socket_widget(terminal_widget):
 			return b''
 
 		return incoming_data
+
+
+	def on_comm_error(self, e):  # triggered by the serial thread, shows a window saying port is used by sb else.
+		pass
+
+	def handle_comm_errors(self, error_flag):  # made a trick, port_errors is a class variable (yup, dirty as fuck !!!)
+		"""
+		Takes the required actions whenever a communication error happens.
+		Shows a message box to the user with the message.
+		:param error_flag:
+		:return:
+		"""
+
+		if (self.error_type == 1):  # this means already open, should never happen.
+			logging.debug("ERROR TYPE 1")
+			d = QMessageBox.critical(
+				self,
+				"Socket/Device unavailable",
+				"The socket on the requested device is not available,\n please review IP/socket and device",
+
+				buttons=QMessageBox.Ok
+			)
+
+	## HELPERS FOR OTHER STUFF ###
+	## SHOULD I PUT THEM IN A SEPARATE CLASS ??? ##
 
 	def ping_sweep(self):
 		import pythonping as ping
