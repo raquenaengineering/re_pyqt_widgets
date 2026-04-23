@@ -286,6 +286,11 @@ class terminal_widget(QWidget):
 		self.log_window = log_window_widget()
 		self.layout_main.addWidget(self.log_window)
 
+		# self.log_window_flag = False
+		if(self.log_window_flag == False):
+			self.log_window.setVisible(False)
+
+
 
 	#COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
 	# maybe it's interesting to consider doing it via SIGNAL TRIGGER
@@ -401,17 +406,13 @@ class terminal_widget(QWidget):
 
 	def enable_log_window(self):
 		print("enable_log_window method called")
-		self.setMinimumHeight(300)  # add more space, so we can properly see the log window.
-		self.log_text.setVisible(True)
-		self.button_save_log.setVisible(True)
-		self.button_clear_log.setVisible(True)
+		self.log_window.setVisible(True)
+		self.log_window.setMinimumHeight(300)  # add more space, so we can properly see the log window.
 	def disable_log_window(self):
 		print("disable_log_window method called")
+		self.log_window.setVisible(False)
 		self.setMaximumHeight(160)  # add more space, so we can properly see the log window.
-		#self.setFixedHeight(80)
-		self.log_text.setVisible(False)
-		self.button_save_log.setVisible(False)
-		self.button_clear_log.setVisible(False)
+
 
 	def add_incoming_lines_to_log(self,lines):
 		# NOTE: Be careful using print, better logging debug, as print doesn't follow the program flow when multiple threads.
