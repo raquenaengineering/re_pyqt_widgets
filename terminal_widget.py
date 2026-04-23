@@ -263,6 +263,7 @@ class terminal_widget(QWidget):
 		log_window_buffer = []	GETTING TOO BIG!
 		log_file_buffer = [] GETTING TOO BIG!
 		byte_buffer GETTING TOO BIG1
+		NOTE: IF THIS DELAYS EXECUTION GET RID OF IT !!!
 		:return:
 		"""
 		# logging.debug("on_service_timer()")
@@ -492,46 +493,6 @@ class terminal_widget(QWidget):
 			self.echo_flag = True
 		logging.debug(self.echo_flag)
 
-	# def parse_bytes(self,bytes):                                         					# maybe include this method onto the serial widget, and add different parsing methods.
-	# 	logging.debug("parse_bytes() method called")
-	# 	try:
-	# 		char_buffer = self.readed_bytes.decode("utf-8", errors = "ignore") 	# convert bytes to characters, so now variables make reference to chars
-	# 		self.readed_bytes = b''                                             			# clean serial_bytes, or it will keep adding data
-	# 	except Exception as e:
-	# 		logging.debug(self.SEPARATOR)
-	# 		logging.debug(e)
-	#
-	# 	else:
-	# 		# logging.debug(SEPARATOR)
-	# 		# logging.debug("char_buffer variable :")
-	# 		# logging.debug(char_buffer)
-	# 		# logging.debug(type(char_buffer))                                    # is string, so ok
-	# 		# logging.debug(SEPARATOR)
-	# 		self.serial_data = self.incoming_data + char_buffer
-	# 		logging.debug(self.SEPARATOR)
-	# 		logging.debug("self.serial_data variable:")
-	# 		logging.debug(self.incoming_data)
-	# 		logging.debug(self.SEPARATOR)
-	# 		endline_str = self.endline.decode("utf-8")              # this needs to be unified between socket and serial.
-	# 		#endline_str = self.endline
-	# 		data_lines = self.serial_data.split(endline_str)        # endlines are defined as n
-	# 		logging.debug("str(self.endline)")
-	# 		logging.debug(str(self.endline))
-	# 		self.incoming_data = data_lines[-1]                     # clean the buffer, saving the non completed data_points
-	#
-	# 		complete_lines = data_lines[:-1]
-	#
-	# 		logging.debug(self.SEPARATOR)
-	# 		logging.debug("complete_lines variable:")
-	# 		for data_line in complete_lines:
-	# 			logging.debug(data_line)
-	#
-	# 		for data_line in complete_lines:  # so all data points except last.
-	# 			self.incoming_lines.append(data_line)
-
-	# def add_incoming_lines_to_log(self):
-	# 	pass
-
 	def read_data(self):
 		"""
 		Used to SIMULATE incoming data, as this widget is generic
@@ -582,6 +543,15 @@ class terminal_widget(QWidget):
 			logging.debug("send_command() method called")
 			self.textbox_send_command.setText("")								# clean content of textbox.
 			logging.debug("Command sent:", command)
+
+
+	def handle_comm_errors(self):
+		"""
+		To be extended at each specific communication widget
+		:return:
+		"""
+		pass
+
 
 
 class MainWindow(QMainWindow):
