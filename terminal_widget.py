@@ -94,7 +94,66 @@ except:
 
 
 class log_window_widget(QWidget):               # future implementation of the log window will be a different widget.
-	pass
+
+	MAX_LINES_LOG_WINDOW = 1000
+
+	def __init__(self):
+
+		super().__init__()
+
+		self.layout_log_window = QVBoxLayout()
+		self.setLayout(self.layout_log_window)
+		# self.layout_main.addLayout(self.layout_log_window, stretch=2)  # stretch doesn't work...
+		self.log_text = QTextEdit()
+		self.log_text.document().setMaximumBlockCount(
+			self.MAX_LINES_LOG_WINDOW)  # makes sure there's a limit of lines in the log window
+		self.log_text.setMinimumHeight(40)
+		self.log_text.setFontPointSize(10)
+		self.log_text.setReadOnly(True)
+		self.layout_log_window.addWidget(self.log_text, stretch=2)
+
+		# self.serial.new_data.connect(self.get_serial_bytes)
+		# self.new_message_to_send.connect(self.add_outgoing_lines_to_log)		# !!! THIS IS A FIX BUT INCORRECT!
+
+		self.buttons_layout = QHBoxLayout()
+		self.layout_log_window.addLayout(self.buttons_layout)
+		self.button_save_log = QPushButton("Save Log")
+		self.button_save_log.clicked.connect(self.save_log)
+		self.buttons_layout.addWidget(self.button_save_log)
+		# add a separator here
+		self.button_clear_log = QPushButton("Clear Log")
+		self.button_clear_log.clicked.connect(self.clear_log)
+		self.buttons_layout.addWidget(self.button_clear_log)
+
+
+	# COMMON: both serial and socket have a button to save the current log #
+	def save_log(self):
+		# popup window to save in user defined location #
+		name = QFileDialog.getSaveFileName(self,"Save File")
+		#logging.debug("Variable file:")
+		#logging.debug(name)
+		try:
+			file = open(name[0],'w')                        # first parameter contains the name of the selected file.
+			file.write(self.log_text.toPlainText())
+		except:
+			logging.debug("Error saving to file")
+	def clear_log(self):
+		"""
+		Clears the log window, but doesn't delete the buffer containing the data that will be printed there.
+		:return:
+		"""
+		self.log_text.clear()
+
+
+# logging.debug("self.log_window_flag")
+# logging.debug(self.log_window_flag)
+#
+# if(self.log_window_flag == True):                           # this only works in "compilation" time.
+# 	self.enable_log_window()
+# elif(self.log_window_flag == False):                                                       # this only works in "compilation" time.
+# 	self.disable_log_window()
+# elif(self.log_window_flag == None):
+# 	logging.warning("SOMETHING IS QUITE FUCKED UP ON LOG_WINDOW_FLAG")
 
 
 class terminal_widget(QWidget):
@@ -143,7 +202,7 @@ class terminal_widget(QWidget):
 	disconnected_signal = Signal()
 	# new_message_to_send = Signal()  # a new message is sent to the slave, used by parent to, for example log it.
 
-	def __init__(self, log_window = False):
+	def __init__(self, log_window = True):
 
 		super().__init__()
 
@@ -223,38 +282,10 @@ class terminal_widget(QWidget):
 		self.layout_send.addWidget(self.check_echo)
 
 		# log window layout box #
-		self.layout_log_window = QVBoxLayout()
-		self.layout_main.addLayout(self.layout_log_window, stretch=2)		# stretch doesn't work...
-		self.log_text = QTextEdit()
-		self.log_text.document().setMaximumBlockCount(self.MAX_LINES_LOG_WINDOW)	# makes sure there's a limit of lines in the log window
-		self.log_text.setMinimumHeight(40)
-		self.log_text.setFontPointSize(10)
-		self.log_text.setReadOnly(True)
-		self.layout_log_window.addWidget(self.log_text,stretch=2)
 
-		# self.serial.new_data.connect(self.get_serial_bytes)
-		# self.new_message_to_send.connect(self.add_outgoing_lines_to_log)		# !!! THIS IS A FIX BUT INCORRECT!
+		self.log_window = log_window_widget()
+		self.layout_main.addWidget(self.log_window)
 
-		self.buttons_layout = QHBoxLayout()
-		self.layout_log_window.addLayout(self.buttons_layout)
-		self.button_save_log = QPushButton("Save Log")
-		self.button_save_log.clicked.connect(self.save_log)
-		self.buttons_layout.addWidget(self.button_save_log)
-		# add a separator here
-		self.button_clear_log = QPushButton("Clear Log")
-		self.button_clear_log.clicked.connect(self.clear_log)
-		self.buttons_layout.addWidget(self.button_clear_log)
-
-
-		# logging.debug("self.log_window_flag")
-		# logging.debug(self.log_window_flag)
-		#
-		# if(self.log_window_flag == True):                           # this only works in "compilation" time.
-		# 	self.enable_log_window()
-		# elif(self.log_window_flag == False):                                                       # this only works in "compilation" time.
-		# 	self.disable_log_window()
-		# elif(self.log_window_flag == None):
-		# 	logging.warning("SOMETHING IS QUITE FUCKED UP ON LOG_WINDOW_FLAG")
 
 	#COMMON, BUT UNIMPLEMENTED: we read the data from the given input stream (serial or socket) on a timer basis
 	# maybe it's interesting to consider doing it via SIGNAL TRIGGER
@@ -394,9 +425,9 @@ class terminal_widget(QWidget):
 		for line in lines:
 			if(line != ''):                                                     # do nothing in case of empty string
 				color = QColor(self.RECEIVE_TEXT_COLOR)
-				self.log_text.setTextColor(color)
+				self.log_window.log_text.setTextColor(color)
 				l = ">> " + str(line)                                           # marking for incoming lines
-				self.log_text.append(l)
+				self.log_window.log_text.append(l)
 		self.incoming_lines = []                                                # data is already on text_edit, not needed anymore
 
 	def add_outgoing_lines_to_log(self,line):
@@ -410,27 +441,9 @@ class terminal_widget(QWidget):
 		if (self.echo_flag == True):
 			logging.debug("echo flag enabled, echoing message on log window")
 			color = QColor(self.SEND_TEXT_COLOR)								# sent text goes in green
-			self.log_text.setTextColor(color)									# sent text goes in green
+			self.log_window.log_text.setTextColor(color)									# sent text goes in green
 			l = "<< " + line									# messages sent add << in front instead of >>
-			self.log_text.append(l)												# add to log
-
-	# COMMON: both serial and socket have a button to save the current log #
-	def save_log(self):
-		# popup window to save in user defined location #
-		name = QFileDialog.getSaveFileName(self,"Save File")
-		#logging.debug("Variable file:")
-		#logging.debug(name)
-		try:
-			file = open(name[0],'w')                        # first parameter contains the name of the selected file.
-			file.write(self.log_text.toPlainText())
-		except:
-			logging.debug("Error saving to file")
-	def clear_log(self):
-		"""
-		Clears the log window, but doesn't delete the buffer containing the data that will be printed there.
-		:return:
-		"""
-		self.log_text.clear()
+			self.log_window.log_text.append(l)												# add to log
 
 	def on_button_connect_click(self):                      # SPECIFIC depending on the type of connection
 		"""
