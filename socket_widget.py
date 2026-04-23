@@ -158,7 +158,8 @@ class socket_widget(terminal_widget):
 		if  connected:
 			super().on_button_connect_click()
 
-
+		self.textbox_ip.setEnabled(False)
+		self.textbox_port.setEnabled(False)
 
 
 	def on_button_disconnect_click(self):
@@ -170,7 +171,10 @@ class socket_widget(terminal_widget):
 		self.ip_address = None                              # clear all connection variables
 		self.port = None
 		self.socket = None                                  #if not closing the socket first, the app crashes
+
 		# updating UI to current state #
+		self.textbox_ip.setEnabled(True)
+		self.textbox_port.setEnabled(True)
 		super().on_button_disconnect_click()
 
 
