@@ -333,24 +333,14 @@ class serial_widget(terminal_widget):
 		# 4. How to display properly each available serial port at the menu ?
 		logging.debug(self.serial_ports)
 		if self.serial_ports != []:
-			# for port in self.serial_ports:
-			#     port_name = port[0]
-			#     logging.debug(port_name)
-			#     b = self.serial_port_menu.addAction(port_name)
-			#     # WE WON'T TRIGGER THE CONNECTION FROM THE BUTTON PUSH ANYMORE.
-			#     b.triggered.connect((lambda serial_connect, port_name=port_name: self.on_port_select(
-			#         port_name)))  # just need to add somehow the serial port name here, and we're done.
-
-			# here we need to add the connect method to the action click, and its result
-
+			self.combo_serial_port.setEnabled(True)
 			for port in self.serial_ports:  # same as adding all ports to action menu, but now using combo box.
 				port_name = port[0]
 				item = self.combo_serial_port.addItem(port_name)  # add new items
 				# self.serial_port_name = port_name  # not the best, but works: update the name for the serial port to be used
 			self.serial_port_name = self.combo_serial_port.currentText()	# assigns displayed text to port name.
 		else:
-			# self.noserials = self.serial_port_menu.addAction("No serial Ports detected")
-			self.noserials.setDisabled(True)
+			self.combo_serial_port.setEnabled(False)
 	def get_serial_ports(self):  # REWRITE THIS FUNCTION TO USE A DICTIONARY, AND MAKE IT WAY CLEANER !!!
 		"""
 		Asks the OS to get the list of the currently available serial ports.
