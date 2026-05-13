@@ -157,9 +157,8 @@ class socket_widget(terminal_widget):
 		connected = self.connect()
 		if  connected:
 			super().on_button_connect_click()
-
-		self.textbox_ip.setEnabled(False)
-		self.textbox_port.setEnabled(False)
+			self.textbox_ip.setEnabled(False)
+			self.textbox_port.setEnabled(False)
 
 
 	def on_button_disconnect_click(self):
