@@ -284,7 +284,7 @@ class terminal_widget(QWidget):
 		# checkbox log#
 		self.check_log = QCheckBox("Log")
 		self.check_log.setChecked(self.log_window_flag)                        # whatever the default echo varaible value is
-		self.check_log.clicked.connect(self.on_check_log)
+		self.check_log.toggled.connect(self.on_check_log)
 		self.layout_send.addWidget(self.check_log)
 
 
