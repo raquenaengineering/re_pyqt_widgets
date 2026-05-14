@@ -281,6 +281,14 @@ class terminal_widget(QWidget):
 		self.check_echo.clicked.connect(self.on_check_echo)
 		self.layout_send.addWidget(self.check_echo)
 
+		# checkbox log#
+		self.check_log = QCheckBox("Log")
+		self.check_log.setChecked(self.log_window_flag)                        # whatever the default echo varaible value is
+		self.check_log.clicked.connect(self.on_check_log)
+		self.layout_send.addWidget(self.check_log)
+
+
+
 		# log window layout box #
 
 		self.log_window = log_window_widget()
@@ -288,7 +296,7 @@ class terminal_widget(QWidget):
 
 		# self.log_window_flag = False
 		if(self.log_window_flag == False):
-			self.log_window.setVisible(False)
+			self.disable_log_window()
 
 
 
@@ -355,16 +363,21 @@ class terminal_widget(QWidget):
 		# if (self.incoming_data[0] != '\0'):  # empty strings won't be saved to file
 		logging.debug("log_window_flag");
 		logging.debug(self.log_window_flag)
+
+		self.byte_buffer, lines = self.get_complete_lines(self.byte_buffer)
+		if lines:  # only if there are new lines, of course.
+			self.new_lines.emit(lines)  # emits a signal to catch it from other widgets.
+
+		# PRINT TO LOG WINDOW -->
+			# should I keep the text printing to the log window just in case I decide to enable it interactively ???
+			# KEEP IN MIND CASE THERE IS NO ENDLINE!!!
+
 		if (self.log_window_flag == True):  # if the log window is disabled no need to do the job ???
 			logging.debug("self.log_window_flag is True")
 			self.log_window_buffer = self.log_window_buffer + [self.readed_bytes]
-			# PRINT TO LOG WINDOW -->
-			# should I keep the text printing to the log window just in case I decide to enable it interactively ???
-			# KEEP IN MIND CASE THERE IS NO ENDLINE!!!
-			self.byte_buffer, lines = self.get_complete_lines(self.byte_buffer)
-			if lines:													# only if there are new lines, of course.
-				self.new_lines.emit(lines)								# emits a signal to catch it from other widgets.
-				self.add_incoming_lines_to_log(lines)					# add lines to log
+			self.add_incoming_lines_to_log(lines)  # add lines to log
+
+
 		if (self.save_to_log_file == True):
 			# SAVE TO LOGFILE #
 			file = open("incoming_data.txt", 'a', newline='')  	# saving data to file.
@@ -404,14 +417,42 @@ class terminal_widget(QWidget):
 
 		return incomplete_line, complete_lines
 
+	# def enable_log_window(self):
+	# 	print("enable_log_window method called")
+	# 	self.log_window.setVisible(True)
+	# 	self.log_window.setMinimumHeight(300)  # add more space, so we can properly see the log window.
+	# def disable_log_window(self):
+	# 	print("disable_log_window method called")
+	# 	self.log_window.setVisible(False)
+	# 	self.setMaximumHeight(160)  # add more space, so we can properly see the log window.
+	#
+
+
+	# def enable_log_window(self):
+	# 	print("enable_log_window method called")
+	# 	self.setMaximumHeight(600)
+	# 	self.log_window.setMaximumHeight(600)
+	# 	self.log_window.setVisible(True)
+	# 	self.log_window.setMinimumHeight(300)  # add more space, so we can properly see the log window.
+	# 	self.log_window.updateGeometry()
+	# 	self.updateGeometry()
+	# def disable_log_window(self):
+	# 	print("disable_log_window method called")
+	# 	self.log_window.setMinimumHeight(0)
+	# 	self.log_window.setMaximumHeight(0)
+	# 	self.log_window.setVisible(False)
+	# 	self.setMaximumHeight(160)  # add more space, so we can properly see the log window.
+	# 	self.log_window.updateGeometry()
+	# 	self.updateGeometry()
+
 	def enable_log_window(self):
 		print("enable_log_window method called")
 		self.log_window.setVisible(True)
-		self.log_window.setMinimumHeight(300)  # add more space, so we can properly see the log window.
+
 	def disable_log_window(self):
 		print("disable_log_window method called")
 		self.log_window.setVisible(False)
-		self.setMaximumHeight(160)  # add more space, so we can properly see the log window.
+
 
 
 	def add_incoming_lines_to_log(self,lines):
@@ -508,6 +549,23 @@ class terminal_widget(QWidget):
 		else:
 			self.echo_flag = True
 		logging.debug(self.echo_flag)
+
+	def on_check_log(self):
+		"""
+		Handles actions to be taken when log check is pressed
+		:return:
+		"""
+		print("on_check_log pressed")
+		if self.check_log.isChecked():
+			self.log_window_flag = True
+			self.enable_log_window()
+		else:
+			self.log_window_flag = False
+			self.disable_log_window()
+
+		logging.debug(self.log_window_flag)
+
+
 
 	def read_data(self):
 		"""
