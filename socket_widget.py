@@ -64,7 +64,10 @@ from PySide6.QtCore import(
 )
 
 # custom imports #
-from re_pyqt_widgets.terminal_widget import terminal_widget
+try:
+    from .terminal_widget import terminal_widget
+except ImportError:
+    from terminal_widget import terminal_widget
 
 # importing the custom palettes from a parent directory, if not found, just ignore palettes #
 try:
